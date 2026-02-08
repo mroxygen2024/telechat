@@ -3,9 +3,15 @@ import type { Server as HttpServer } from 'http'
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
 import type { ClientToServerEvents, ServerToClientEvents } from '../types/socket.js'
-import { messagePayloadSchema, typingPayloadSchema } from '../validators/messageValidators.js'
+import {
+  messagePayloadSchema,
+  messageReadPayloadSchema,
+  typingPayloadSchema,
+} from '../validators/messageValidators.js'
 import { createMessageInConversation } from '../services/messageService.js'
 import { Conversation } from '../models/Conversation.js'
+import { Message } from '../models/Message.js'
+import mongoose from 'mongoose'
 
 interface JwtPayload {
   userId: string
@@ -64,6 +70,7 @@ export const initSocket = (httpServer: HttpServer) => {
         senderId: message.senderId.toString(),
         content: message.content,
         timestamp: message.timestamp,
+        readBy: (message.readBy || []).map((id) => id.toString()),
       }
 
       if (otherParticipantId) {
@@ -71,6 +78,70 @@ export const initSocket = (httpServer: HttpServer) => {
       }
 
       io?.to(socket.data.userId).emit('message_received', serialized)
+    })
+
+    socket.on('message_read', async (payload) => {
+      const parsed = messageReadPayloadSchema.safeParse(payload)
+      if (!parsed.success) {
+        return
+      }
+
+      if (parsed.data.readerId !== socket.data.userId) {
+        return
+      }
+
+      const conversation = await Conversation.findById(parsed.data.conversationId)
+      if (!conversation) {
+        return
+      }
+
+      const isParticipant = conversation.participants.some(
+        (participantId) => participantId.toString() === socket.data.userId
+      )
+
+      if (!isParticipant) {
+        return
+      }
+
+      const readerObjectId = new mongoose.Types.ObjectId(parsed.data.readerId)
+
+      const messageFilter: Record<string, any> = {
+        conversationId: parsed.data.conversationId,
+        senderId: { $ne: readerObjectId },
+        readBy: { $ne: readerObjectId },
+      }
+
+      if (parsed.data.messageIds?.length) {
+        messageFilter._id = { $in: parsed.data.messageIds }
+      }
+
+      const unreadMessages = await Message.find(messageFilter).select('_id').lean()
+      const messageIds = unreadMessages.map((message) => message._id.toString())
+
+      if (messageIds.length > 0) {
+        await Message.updateMany(
+          { _id: { $in: messageIds } },
+          { $addToSet: { readBy: readerObjectId } }
+        )
+      }
+
+      const currentUnread = conversation.unreadCount.get(parsed.data.readerId) || 0
+      if (currentUnread !== 0) {
+        conversation.unreadCount.set(parsed.data.readerId, 0)
+        await conversation.save()
+      }
+
+      const otherParticipant = conversation.participants.find(
+        (participantId) => participantId.toString() !== socket.data.userId
+      )
+
+      if (otherParticipant && messageIds.length > 0) {
+        io?.to(otherParticipant.toString()).emit('message_read', {
+          conversationId: parsed.data.conversationId,
+          readerId: parsed.data.readerId,
+          messageIds,
+        })
+      }
     })
 
     socket.on('typing_start', async (payload) => {

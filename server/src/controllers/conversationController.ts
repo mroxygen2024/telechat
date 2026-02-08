@@ -52,6 +52,7 @@ export const getMessages: RequestHandler = async (req, res, next) => {
         _id: message._id.toString(),
         conversationId: message.conversationId.toString(),
         senderId: message.senderId.toString(),
+        readBy: (message.readBy || []).map((id) => id.toString()),
       }))
     )
   } catch (error) {

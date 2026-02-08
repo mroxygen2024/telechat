@@ -12,6 +12,8 @@ export const ChatWindow: React.FC = () => {
     conversations,
     upsertMessage,
     updateLastMessage,
+    updateMessagesReadBy,
+    setConversationUnreadCount,
   } = useChatStore();
   const { user: me } = useAuthStore();
   const [inputText, setInputText] = useState("");
@@ -101,6 +103,31 @@ export const ChatWindow: React.FC = () => {
       socketService.off("typing_stop", handleTypingStop);
     };
   }, [activeConversationId, partner?.id]);
+
+  useEffect(() => {
+    if (!activeConversationId || !me?.id) return;
+
+    const unreadMessageIds = currentMessages
+      .filter((msg) => msg.senderId !== me.id && !msg.readBy.includes(me.id))
+      .map((msg) => msg.id);
+
+    if (unreadMessageIds.length === 0) return;
+
+    socketService.emit("message_read", {
+      conversationId: activeConversationId,
+      readerId: me.id,
+      messageIds: unreadMessageIds,
+    });
+
+    updateMessagesReadBy(activeConversationId, unreadMessageIds, me.id, me.id);
+    setConversationUnreadCount(activeConversationId, 0);
+  }, [
+    activeConversationId,
+    currentMessages,
+    me?.id,
+    updateMessagesReadBy,
+    setConversationUnreadCount,
+  ]);
 
   const emitTypingStop = () => {
     if (!activeConversationId || !me?.id) return;
@@ -284,11 +311,9 @@ export const ChatWindow: React.FC = () => {
                   <span>{time}</span>
                   {isMe && (
                     <span>
-                      {msg.status === "read"
+                      {partner?.id && msg.readBy.includes(partner.id)
                         ? "✓✓"
-                        : msg.status === "delivered"
-                          ? "✓✓"
-                          : "✓"}
+                        : "✓"}
                     </span>
                   )}
                 </div>

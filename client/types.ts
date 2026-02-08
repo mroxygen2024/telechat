@@ -12,6 +12,7 @@ export interface Message {
   senderId: string;
   content: string;
   timestamp: string;
+  readBy: string[];
   status: 'sent' | 'delivered' | 'read';
 }
 

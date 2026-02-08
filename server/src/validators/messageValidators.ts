@@ -12,9 +12,16 @@ export const messagePayloadSchema = z.object({
   senderId: objectIdSchema,
   content: z.string().min(1),
   timestamp: z.union([z.string(), z.date()]).optional(),
+  readBy: z.array(objectIdSchema).optional(),
 })
 
 export const typingPayloadSchema = z.object({
   conversationId: objectIdSchema,
   senderId: objectIdSchema,
+})
+
+export const messageReadPayloadSchema = z.object({
+  conversationId: objectIdSchema,
+  readerId: objectIdSchema,
+  messageIds: z.array(objectIdSchema).optional(),
 })

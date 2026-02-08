@@ -25,6 +25,7 @@ export interface MessageDTO {
   senderId: string
   content: string
   timestamp: string | Date
+  readBy?: string[]
 }
 
 export interface CreateMessageRequest {

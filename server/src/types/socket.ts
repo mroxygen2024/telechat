@@ -5,10 +5,17 @@ export interface TypingPayload {
   senderId: string
 }
 
+export interface MessageReadPayload {
+  conversationId: string
+  readerId: string
+  messageIds?: string[]
+}
+
 export interface ClientToServerEvents {
   send_message: (payload: MessageDTO) => void
   typing_start: (payload: TypingPayload) => void
   typing_stop: (payload: TypingPayload) => void
+  message_read: (payload: MessageReadPayload) => void
 }
 
 export interface ServerToClientEvents {
@@ -16,4 +23,5 @@ export interface ServerToClientEvents {
   message_received: (payload: MessageDTO) => void
   typing_start: (payload: TypingPayload) => void
   typing_stop: (payload: TypingPayload) => void
+  message_read: (payload: MessageReadPayload) => void
 }

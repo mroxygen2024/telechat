@@ -14,8 +14,15 @@ interface ChatStore {
   setActiveConversation: (id: string | null) => void;
   upsertMessage: (convId: string, message: Message) => void;
   updateMessageStatus: (convId: string, messageId: string, status: Message['status']) => void;
+  updateMessagesReadBy: (
+    convId: string,
+    messageIds: string[],
+    readerId: string,
+    currentUserId?: string
+  ) => void;
   updateLastMessage: (convId: string, text: string, timestamp: string) => void;
   addConversation: (conversation: Conversation) => void;
+  setConversationUnreadCount: (convId: string, unreadCount: number) => void;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -71,6 +78,31 @@ export const useChatStore = create<ChatStore>((set) => ({
       };
     }),
 
+  updateMessagesReadBy: (convId, messageIds, readerId, currentUserId) =>
+    set((state) => {
+      const existingMessages = state.messages[convId] || [];
+      const messageIdSet = new Set(messageIds);
+
+      return {
+        messages: {
+          ...state.messages,
+          [convId]: existingMessages.map((msg) => {
+            if (!messageIdSet.has(msg.id)) return msg;
+            const readBy = msg.readBy.includes(readerId)
+              ? msg.readBy
+              : [...msg.readBy, readerId];
+            const shouldMarkRead =
+              currentUserId && msg.senderId === currentUserId && readerId !== currentUserId;
+            return {
+              ...msg,
+              readBy,
+              status: shouldMarkRead ? 'read' : msg.status,
+            };
+          }),
+        },
+      };
+    }),
+
   updateLastMessage: (convId, text, timestamp) => set((state) => ({
     conversations: state.conversations.map(c => 
       c.id === convId ? { ...c, lastMessage: text, lastTimestamp: timestamp } : c
@@ -82,5 +114,12 @@ export const useChatStore = create<ChatStore>((set) => ({
     return {
       conversations: exists ? state.conversations : [conversation, ...state.conversations],
     }
-  })
+  }),
+
+  setConversationUnreadCount: (convId, unreadCount) =>
+    set((state) => ({
+      conversations: state.conversations.map((conv) =>
+        conv.id === convId ? { ...conv, unreadCount } : conv
+      ),
+    })),
 }));

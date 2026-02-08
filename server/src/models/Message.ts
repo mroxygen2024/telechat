@@ -18,6 +18,11 @@ const messageSchema = new Schema(
       minlength: 1,
       trim: true,
     },
+    readBy: {
+      type: [Schema.Types.ObjectId],
+      ref: 'User',
+      default: [],
+    },
     timestamp: {
       type: Date,
       default: Date.now,

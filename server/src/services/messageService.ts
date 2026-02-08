@@ -33,6 +33,7 @@ export const createMessageInConversation = async ({
     conversationId,
     senderId: senderObjectId,
     content,
+    readBy: [senderObjectId],
   })
 
   if (otherParticipant) {

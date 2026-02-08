@@ -19,6 +19,7 @@ type ApiMessage = {
   senderId: string;
   content: string;
   timestamp: string;
+  readBy?: string[];
 };
 
 const normalizeUser = (user: ApiUser): User => ({
@@ -32,6 +33,7 @@ const normalizeMessage = (message: ApiMessage): Message => ({
   senderId: message.senderId,
   content: message.content,
   timestamp: message.timestamp,
+  readBy: message.readBy || [],
   status: 'delivered',
 });
 

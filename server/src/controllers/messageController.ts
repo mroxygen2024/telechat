@@ -31,6 +31,7 @@ export const createMessage: RequestHandler = async (req, res, next) => {
       senderId: message.senderId.toString(),
       content: message.content,
       timestamp: message.timestamp,
+      readBy: (message.readBy || []).map((id) => id.toString()),
     }
 
     const io = getIO()

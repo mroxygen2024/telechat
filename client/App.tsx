@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const {
     upsertMessage,
     updateMessageStatus,
+    updateMessagesReadBy,
     updateLastMessage,
     setConversations,
     setMessages,
@@ -42,6 +43,7 @@ const App: React.FC = () => {
         senderId: msg.senderId,
         content: msg.content,
         timestamp: msg.timestamp,
+        readBy: msg.readBy ?? [],
         status: msg.status ?? "delivered",
       });
 
@@ -64,12 +66,28 @@ const App: React.FC = () => {
         );
       };
 
+      const handleMessageRead = (payload: {
+        conversationId: string;
+        readerId: string;
+        messageIds?: string[];
+      }) => {
+        if (!payload.messageIds?.length) return;
+        updateMessagesReadBy(
+          payload.conversationId,
+          payload.messageIds,
+          payload.readerId,
+          user?.id,
+        );
+      };
+
       socketService.on("new_message", handleNewMessage);
       socketService.on("message_received", handleMessageReceived);
+      socketService.on("message_read", handleMessageRead);
 
       return () => {
         socketService.off("new_message", handleNewMessage);
         socketService.off("message_received", handleMessageReceived);
+        socketService.off("message_read", handleMessageRead);
         socketService.disconnect();
       };
     }
@@ -79,6 +97,8 @@ const App: React.FC = () => {
     upsertMessage,
     updateLastMessage,
     updateMessageStatus,
+    updateMessagesReadBy,
+    user?.id,
   ]);
 
   useEffect(() => {
