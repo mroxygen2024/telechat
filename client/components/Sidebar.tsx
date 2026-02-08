@@ -192,9 +192,15 @@ export const Sidebar: React.FC = () => {
                 {renderAvatar(partner, "w-12 h-12", "text-base")}
                 <div
                   className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
-                    partner.status === "online" ? "bg-green-500" : "bg-slate-300"
+                    partner.status === "online"
+                      ? "bg-green-500"
+                      : "bg-slate-300"
                   }`}
-                  title={partner.status === "online" ? "Online" : "Offline"}
+                  title={
+                    partner.status === "online"
+                      ? "Online"
+                      : "last seen recently"
+                  }
                 ></div>
               </div>
               <div className="flex-1 min-w-0">
