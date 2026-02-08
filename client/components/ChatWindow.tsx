@@ -27,6 +27,34 @@ export const ChatWindow: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const getInitial = (name?: string) =>
+    name?.trim().charAt(0).toUpperCase() || "?";
+
+  const renderAvatar = (
+    user?: User,
+    className = "w-10 h-10",
+    textClass = "text-sm",
+  ) => {
+    if (user?.avatar) {
+      return (
+        <img
+          src={user.avatar}
+          alt={user.username}
+          className={`${className} rounded-full object-cover`}
+        />
+      );
+    }
+
+    return (
+      <div
+        className={`${className} rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold ${textClass}`}
+        aria-label={user?.username}
+      >
+        {getInitial(user?.username)}
+      </div>
+    );
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [currentMessages]);
@@ -90,11 +118,7 @@ export const ChatWindow: React.FC = () => {
       {/* Header */}
       <header className="bg-white px-6 py-3 border-b border-slate-200 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <img
-            src={partner?.avatar}
-            alt={partner?.username}
-            className="w-10 h-10 rounded-full object-cover"
-          />
+          {renderAvatar(partner, "w-10 h-10", "text-sm")}
           <div>
             <h3 className="text-sm font-bold text-slate-900">
               {partner?.username}

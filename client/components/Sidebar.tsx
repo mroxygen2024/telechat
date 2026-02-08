@@ -30,6 +30,34 @@ export const Sidebar: React.FC = () => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const getInitial = (name?: string) =>
+    name?.trim().charAt(0).toUpperCase() || "?";
+
+  const renderAvatar = (
+    user?: User,
+    className = "w-10 h-10",
+    textClass = "text-sm",
+  ) => {
+    if (user?.avatar) {
+      return (
+        <img
+          src={user.avatar}
+          alt={user.username}
+          className={`${className} rounded-full object-cover`}
+        />
+      );
+    }
+
+    return (
+      <div
+        className={`${className} rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold ${textClass}`}
+        aria-label={user?.username}
+      >
+        {getInitial(user?.username)}
+      </div>
+    );
+  };
+
   const filteredUsers = useMemo(() => {
     const normalized = search.trim().toLowerCase();
     if (!normalized) return users;
@@ -74,11 +102,7 @@ export const Sidebar: React.FC = () => {
       {/* Header */}
       <div className="p-4 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img
-            src={me?.avatar}
-            alt={me?.username}
-            className="w-10 h-10 rounded-full object-cover"
-          />
+          {renderAvatar(me, "w-10 h-10", "text-sm")}
           <div>
             <p className="font-semibold text-sm leading-tight">
               {me?.username}
@@ -163,11 +187,7 @@ export const Sidebar: React.FC = () => {
               className={`px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors ${isActive ? "bg-blue-50 border-r-4 border-blue-500" : "hover:bg-slate-50"}`}
             >
               <div className="relative flex-shrink-0">
-                <img
-                  src={partner.avatar}
-                  alt={partner.username}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
+                {renderAvatar(partner, "w-12 h-12", "text-base")}
                 {partner.status === "online" && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                 )}
@@ -264,9 +284,12 @@ export const Sidebar: React.FC = () => {
                     onClick={() => startConversation(user.id)}
                     className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 flex items-center justify-between"
                   >
-                    <span className="text-sm text-slate-800">
-                      {user.username}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      {renderAvatar(user, "w-8 h-8", "text-xs")}
+                      <span className="text-sm text-slate-800">
+                        {user.username}
+                      </span>
+                    </div>
                     <span className="text-xs text-slate-400">Start chat</span>
                   </button>
                 ))
