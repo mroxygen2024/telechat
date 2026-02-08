@@ -5,9 +5,11 @@ import { conversationRoutes } from './routes/conversationRoutes.js'
 import { messageRoutes } from './routes/messageRoutes.js'
 import { errorHandler } from './middleware/errorMiddleware.js'
 import { env } from './config/env.js'
+import morgan from 'morgan'
 
 export const createApp = () => {
   const app = express()
+  app.use(morgan('dev'))
 
   app.use(
     cors({
