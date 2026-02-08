@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useChatStore } from "../stores/useChatStore";
 import { useAuthStore } from "../stores/useAuthStore";
 import { User, Conversation } from "../types";
@@ -58,28 +58,30 @@ export const Sidebar: React.FC = () => {
     );
   };
 
-  const filteredUsers = useMemo(() => {
-    const normalized = search.trim().toLowerCase();
-    if (!normalized) return users;
-    return users.filter((user) =>
-      user.username.toLowerCase().includes(normalized),
-    );
-  }, [users, search]);
-
   const openNewChat = async () => {
     setIsModalOpen(true);
     setModalError("");
     setSearch("");
-    setIsLoadingUsers(true);
-    try {
-      const result = await chatApi.getUsers();
-      setUsers(result);
-    } catch (error: any) {
-      setModalError(error.message || "Failed to load users");
-    } finally {
-      setIsLoadingUsers(false);
-    }
   };
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const timeoutId = window.setTimeout(async () => {
+      setIsLoadingUsers(true);
+      setModalError("");
+      try {
+        const result = await chatApi.getUsers(search.trim() || undefined);
+        setUsers(result);
+      } catch (error: any) {
+        setModalError(error.message || "Failed to load users");
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isModalOpen, search]);
 
   const startConversation = async (participantId: string) => {
     if (!me?.id) return;
@@ -275,10 +277,10 @@ export const Sidebar: React.FC = () => {
             <div className="max-h-64 overflow-y-auto">
               {isLoadingUsers ? (
                 <p className="text-sm text-slate-500">Loading users...</p>
-              ) : filteredUsers.length === 0 ? (
+              ) : users.length === 0 ? (
                 <p className="text-sm text-slate-500">No users found</p>
               ) : (
-                filteredUsers.map((user) => (
+                users.map((user) => (
                   <button
                     key={user.id}
                     onClick={() => startConversation(user.id)}
