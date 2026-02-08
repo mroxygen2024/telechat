@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuthStore } from "./stores/useAuthStore";
 import { useChatStore } from "./stores/useChatStore";
 import { socketService } from "./services/socketService";
 import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
 import { Sidebar } from "./components/Sidebar";
 import { ChatWindow } from "./components/ChatWindow";
 import { chatApi } from "./api/chatApi";
@@ -10,6 +11,7 @@ import type { Message } from "./types";
 
 const App: React.FC = () => {
   const { isAuthenticated, checkAuth, user, token } = useAuthStore();
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const {
     upsertMessage,
     updateMessageStatus,
@@ -116,7 +118,11 @@ const App: React.FC = () => {
   ]);
 
   if (!isAuthenticated) {
-    return <LoginPage />;
+    return authMode === "signup" ? (
+      <SignupPage onSwitchToLogin={() => setAuthMode("login")} />
+    ) : (
+      <LoginPage onSwitchToSignup={() => setAuthMode("signup")} />
+    );
   }
 
   return (

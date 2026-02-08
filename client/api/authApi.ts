@@ -30,5 +30,20 @@ export const authApi = {
       user: normalizeUser(response.user),
       token: response.token,
     };
+  },
+  signup: async (username: string, password: string): Promise<{ user: User, token: string }> => {
+    const response = await requestJson<LoginResponse>(
+      '/auth/signup',
+      {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      },
+      false
+    );
+
+    return {
+      user: normalizeUser(response.user),
+      token: response.token,
+    };
   }
 };

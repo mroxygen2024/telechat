@@ -4,27 +4,46 @@ import { authApi } from "../api/authApi";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 
-interface LoginPageProps {
-  onSwitchToSignup: () => void;
+interface SignupPageProps {
+  onSwitchToLogin: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignup }) => {
+export const SignupPage: React.FC<SignupPageProps> = ({ onSwitchToLogin }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const login = useAuthStore((state) => state.login);
 
+  const validateInputs = () => {
+    if (username.trim().length < 3) {
+      setError("Username must be at least 3 characters");
+      return false;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
 
+    if (!validateInputs()) return;
+
+    setIsLoading(true);
     try {
-      const response = await authApi.login(username, password);
+      const response = await authApi.signup(username.trim(), password);
       login(response.user, response.token);
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Signup failed");
     } finally {
       setIsLoading(false);
     }
@@ -45,19 +64,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignup }) => {
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-          Sign in to TeleChat
+          Create your TeleChat account
         </h2>
         <p className="mt-2 text-center text-sm text-slate-600">
-          Use <span className="font-bold">admin / password</span> to enter
-        </p>
-        <p className="mt-2 text-center text-sm text-slate-600">
-          New here?{" "}
+          Already have an account?{" "}
           <button
             type="button"
-            onClick={onSwitchToSignup}
+            onClick={onSwitchToLogin}
             className="font-semibold text-blue-600 hover:text-blue-700"
           >
-            Create an account
+            Sign in
           </button>
         </p>
       </div>
@@ -71,7 +87,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignup }) => {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
+              placeholder="jane_doe"
             />
 
             <Input
@@ -81,28 +97,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignup }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+            />
+
+            <Input
+              label="Confirm Password"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
               error={error}
             />
 
             <div>
               <Button type="submit" className="w-full" isLoading={isLoading}>
-                Sign in
+                Create account
               </Button>
             </div>
           </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">
-                  Secure End-to-End Encryption
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
