@@ -16,7 +16,7 @@ export const getConversations: RequestHandler = async (req, res, next) => {
         _id: conversation._id.toString(),
         participants: (conversation.participants || []).map((participant) => ({
           _id: participant._id.toString(),
-          username: participant.username,
+          username: (participant as unknown as { _id: any; username: string }).username,
         })),
       }))
     )
