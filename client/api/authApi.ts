@@ -1,18 +1,34 @@
 
 import { User } from '../types';
-import { DUMMY_ME } from '../constants';
+import { requestJson } from './http';
+
+type LoginResponse = {
+  user: {
+    _id: string;
+    username: string;
+  };
+  token: string;
+};
+
+const normalizeUser = (user: LoginResponse['user']): User => ({
+  id: user._id,
+  username: user.username,
+});
 
 export const authApi = {
   login: async (username: string, password: string): Promise<{ user: User, token: string }> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    if (username === 'admin' && password === 'password') {
-      return {
-        user: DUMMY_ME,
-        token: 'mock-jwt-token-123456789'
-      };
-    }
-    throw new Error('Invalid credentials. Use admin/password');
+    const response = await requestJson<LoginResponse>(
+      '/auth/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      },
+      false
+    );
+
+    return {
+      user: normalizeUser(response.user),
+      token: response.token,
+    };
   }
 };

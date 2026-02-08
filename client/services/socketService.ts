@@ -1,60 +1,49 @@
 
-import { Message } from '../types';
+import { io, type Socket } from 'socket.io-client';
+import { getApiBaseUrl } from '../api/http';
 
 type Listener = (data: any) => void;
 
 class SocketService {
   private listeners: Record<string, Listener[]> = {};
+  private socket: Socket | null = null;
 
-  connect() {
-    console.log('Socket connecting (Mocked)...');
+  connect(token?: string) {
+    if (this.socket) return;
+    this.socket = io(getApiBaseUrl(), {
+      auth: token ? { token } : undefined,
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Socket connection error', error.message);
+    });
+
+    Object.entries(this.listeners).forEach(([event, callbacks]) => {
+      callbacks.forEach((cb) => this.socket?.on(event, cb));
+    });
   }
 
   disconnect() {
-    console.log('Socket disconnecting (Mocked)...');
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
   }
 
   on(event: string, callback: Listener) {
     if (!this.listeners[event]) this.listeners[event] = [];
     this.listeners[event].push(callback);
+    this.socket?.on(event, callback);
   }
 
   off(event: string, callback: Listener) {
     if (!this.listeners[event]) return;
     this.listeners[event] = this.listeners[event].filter(l => l !== callback);
+    this.socket?.off(event, callback);
   }
 
   emit(event: string, data: any) {
-    console.log(`Socket emitting: ${event}`, data);
-    
-    // Simulate server behavior for 'send_message'
-    if (event === 'send_message') {
-      const message = data as Message;
-      
-      // Simulate receipt ACK
-      setTimeout(() => {
-        this.trigger('message_received', { ...message, status: 'delivered' });
-      }, 500);
-
-      // Simulate a random auto-reply from the peer
-      setTimeout(() => {
-        const reply: Message = {
-          id: `reply-${Date.now()}`,
-          conversationId: message.conversationId,
-          senderId: 'user-1', // Mocking Alice
-          content: `I received your message: "${message.content}"`,
-          timestamp: new Date().toISOString(),
-          status: 'sent'
-        };
-        this.trigger('new_message', reply);
-      }, 2000);
-    }
-  }
-
-  private trigger(event: string, data: any) {
-    if (this.listeners[event]) {
-      this.listeners[event].forEach(l => l(data));
-    }
+    this.socket?.emit(event, data);
   }
 }
 
