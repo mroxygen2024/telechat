@@ -35,13 +35,14 @@ userSchema.methods.comparePassword = async function (plain: string): Promise<boo
 }
 
 userSchema.set('toJSON', {
-  transform: (_doc, ret) => {
+  transform: (_doc, ret: { password?: string }) => {
     delete ret.password
     return ret
   },
 })
 
-export type UserDocument = InferSchemaType<typeof userSchema> & {
+export type UserDocument = Omit<InferSchemaType<typeof userSchema>, 'password'> & {
+  password?: string
   comparePassword: (plain: string) => Promise<boolean>
 }
 
