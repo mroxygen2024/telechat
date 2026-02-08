@@ -13,6 +13,8 @@ export interface Message {
   content: string;
   timestamp: string;
   readBy: string[];
+  deletedFor: string[];
+  isDeletedGlobally: boolean;
   status: 'sent' | 'delivered' | 'read';
 }
 

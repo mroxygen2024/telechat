@@ -4,6 +4,16 @@ import { useAuthStore } from "../stores/useAuthStore";
 import { chatApi } from "../api/chatApi";
 import { Message, User } from "../types";
 import { socketService } from "../services/socketService";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "./ui/ContextMenu";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "./ui/Drawer";
 
 export const ChatWindow: React.FC = () => {
   const {
@@ -16,6 +26,8 @@ export const ChatWindow: React.FC = () => {
     setConversationUnreadCount,
     updateMessageContent,
     removeMessage,
+    markMessageDeletedFor,
+    markMessageDeletedGlobally,
   } = useChatStore();
   const { user: me } = useAuthStore();
   const [inputText, setInputText] = useState("");
@@ -27,6 +39,16 @@ export const ChatWindow: React.FC = () => {
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(
     null,
   );
+  const [pendingRemovalIds, setPendingRemovalIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerStep, setDrawerStep] = useState<"actions" | "delete">(
+    "actions",
+  );
+  const [drawerMessage, setDrawerMessage] = useState<Message | null>(null);
+  const longPressTimeoutRef = useRef<number | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<number | null>(null);
   const hasEmittedTypingRef = useRef(false);
@@ -72,6 +94,13 @@ export const ChatWindow: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [currentMessages]);
+
+  useEffect(() => {
+    setIsTouchDevice(
+      typeof window !== "undefined" &&
+        window.matchMedia("(pointer: coarse)").matches,
+    );
+  }, []);
 
   const updateConversationLast = (updatedMessages: Message[]) => {
     if (!activeConversationId) return;
@@ -219,6 +248,7 @@ export const ChatWindow: React.FC = () => {
   };
 
   const handleStartEdit = (message: Message) => {
+    if (message.isDeletedGlobally) return;
     setEditingMessageId(message.id);
     setEditText(message.content);
   };
@@ -229,7 +259,13 @@ export const ChatWindow: React.FC = () => {
   };
 
   const handleSaveEdit = async (message: Message) => {
-    if (!activeConversationId || !editText.trim() || isSavingEdit) return;
+    if (
+      !activeConversationId ||
+      !editText.trim() ||
+      isSavingEdit ||
+      message.isDeletedGlobally
+    )
+      return;
     setIsSavingEdit(true);
     try {
       const updated = await chatApi.updateMessage(message.id, editText.trim());
@@ -252,17 +288,41 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
-  const handleDeleteMessage = async (message: Message) => {
+  const scheduleRemoval = (messageId: string) => {
+    if (pendingRemovalIds.has(messageId)) return;
+    setPendingRemovalIds((prev) => new Set(prev).add(messageId));
+    window.setTimeout(() => {
+      if (!activeConversationId) return;
+      removeMessage(activeConversationId, messageId);
+      setPendingRemovalIds((prev) => {
+        const next = new Set(prev);
+        next.delete(messageId);
+        return next;
+      });
+    }, 180);
+  };
+
+  const handleDeleteMessage = async (
+    message: Message,
+    deleteType: "me" | "everyone",
+  ) => {
     if (!activeConversationId || deletingMessageId) return;
-    const confirmed = window.confirm("Delete this message?");
-    if (!confirmed) return;
+    if (deleteType === "everyone" && message.senderId !== me?.id) return;
+    if (message.isDeletedGlobally) return;
     setDeletingMessageId(message.id);
     try {
-      await chatApi.deleteMessage(message.id);
-      removeMessage(activeConversationId, message.id);
-      const updatedMessages = currentMessages.filter(
-        (msg) => msg.id !== message.id,
-      );
+      await chatApi.deleteMessage(message.id, deleteType);
+      if (deleteType === "me") {
+        if (me?.id) {
+          markMessageDeletedFor(activeConversationId, message.id, me.id);
+        }
+        scheduleRemoval(message.id);
+      } else {
+        markMessageDeletedGlobally(activeConversationId, message.id);
+        scheduleRemoval(message.id);
+      }
+
+      const updatedMessages = currentMessages.filter((msg) => msg.id !== message.id);
       if (currentMessages[currentMessages.length - 1]?.id === message.id) {
         updateConversationLast(updatedMessages);
       }
@@ -270,6 +330,40 @@ export const ChatWindow: React.FC = () => {
       console.error("Failed to delete message", error);
     } finally {
       setDeletingMessageId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeConversationId || !me?.id) return;
+    currentMessages.forEach((message) => {
+      const shouldRemove =
+        message.isDeletedGlobally || message.deletedFor.includes(me.id);
+      if (shouldRemove && !pendingRemovalIds.has(message.id)) {
+        scheduleRemoval(message.id);
+      }
+    });
+  }, [activeConversationId, currentMessages, me?.id, pendingRemovalIds]);
+
+  const openDrawerForMessage = (message: Message) => {
+    setDrawerMessage(message);
+    setDrawerStep("actions");
+    setDrawerOpen(true);
+  };
+
+  const handleLongPressStart = (message: Message) => {
+    if (!isTouchDevice) return;
+    if (longPressTimeoutRef.current) {
+      window.clearTimeout(longPressTimeoutRef.current);
+    }
+    longPressTimeoutRef.current = window.setTimeout(() => {
+      openDrawerForMessage(message);
+    }, 450);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimeoutRef.current) {
+      window.clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
     }
   };
 
@@ -363,87 +457,176 @@ export const ChatWindow: React.FC = () => {
             minute: "2-digit",
           });
           const isEditing = editingMessageId === msg.id;
+          const isHidden =
+            msg.isDeletedGlobally || (me?.id && msg.deletedFor.includes(me.id));
+          if (isHidden && !pendingRemovalIds.has(msg.id)) {
+            return null;
+          }
 
           return (
             <div
               key={msg.id}
               className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`group max-w-[85%] md:max-w-[70%] px-4 py-2 rounded-2xl relative shadow-sm ${
-                  isMe
-                    ? "bg-blue-600 text-white rounded-br-none"
-                    : "bg-white text-slate-800 rounded-bl-none"
-                }`}
-              >
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="w-full bg-white/90 text-slate-800 rounded-xl p-2 text-sm focus:outline-none"
-                      rows={2}
-                    />
-                    <div className="flex items-center justify-end gap-2 text-xs">
-                      <button
-                        type="button"
-                        onClick={handleCancelEdit}
-                        className="px-2 py-1 rounded-full bg-white/70 text-slate-600 hover:bg-white"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSaveEdit(msg)}
-                        disabled={!editText.trim() || isSavingEdit}
-                        className="px-2 py-1 rounded-full bg-white text-blue-600 hover:bg-white/90 disabled:opacity-60"
-                      >
-                        Save
-                      </button>
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  <div
+                    onTouchStart={() => handleLongPressStart(msg)}
+                    onTouchEnd={handleLongPressEnd}
+                    onTouchMove={handleLongPressEnd}
+                    className={`group max-w-[85%] md:max-w-[70%] px-4 py-2 rounded-2xl relative shadow-sm transition-all duration-200 ${
+                      pendingRemovalIds.has(msg.id)
+                        ? "opacity-0 scale-95"
+                        : "opacity-100 scale-100"
+                    } ${
+                      isMe
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-white text-slate-800 rounded-bl-none"
+                    }`}
+                  >
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="w-full bg-white/90 text-slate-800 rounded-xl p-2 text-sm focus:outline-none"
+                          rows={2}
+                        />
+                        <div className="flex items-center justify-end gap-2 text-xs">
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="px-2 py-1 rounded-full bg-white/70 text-slate-600 hover:bg-white"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEdit(msg)}
+                            disabled={!editText.trim() || isSavingEdit}
+                            className="px-2 py-1 rounded-full bg-white text-blue-600 hover:bg-white/90 disabled:opacity-60"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[15px] leading-relaxed break-words">
+                        {msg.content}
+                      </p>
+                    )}
+                    <div
+                      className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${isMe ? "text-blue-100" : "text-slate-400"}`}
+                    >
+                      <span>{time}</span>
+                      {isMe && (
+                        <span>
+                          {partner?.id && msg.readBy.includes(partner.id)
+                            ? "✓✓"
+                            : "✓"}
+                        </span>
+                      )}
                     </div>
                   </div>
-                ) : (
-                  <p className="text-[15px] leading-relaxed break-words">
-                    {msg.content}
-                  </p>
-                )}
-                <div
-                  className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${isMe ? "text-blue-100" : "text-slate-400"}`}
-                >
-                  <span>{time}</span>
-                  {isMe && (
-                    <span>
-                      {partner?.id && msg.readBy.includes(partner.id)
-                        ? "✓✓"
-                        : "✓"}
-                    </span>
-                  )}
-                </div>
-                {isMe && !isEditing && (
-                  <div className="absolute -top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleStartEdit(msg)}
-                      className="text-xs bg-white/90 text-slate-600 px-2 py-0.5 rounded-full shadow-sm hover:bg-white"
-                    >
+                </ContextMenuTrigger>
+                <ContextMenuContent className="hidden md:block">
+                  {isMe && !msg.isDeletedGlobally && (
+                    <ContextMenuItem onClick={() => handleStartEdit(msg)}>
                       Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteMessage(msg)}
-                      disabled={deletingMessageId === msg.id}
-                      className="text-xs bg-white/90 text-red-500 px-2 py-0.5 rounded-full shadow-sm hover:bg-white disabled:opacity-60"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
+                    </ContextMenuItem>
+                  )}
+                  <ContextMenuSub>
+                    <ContextMenuSubTrigger>Delete</ContextMenuSubTrigger>
+                    <ContextMenuSubContent>
+                      <ContextMenuItem
+                        onClick={() => handleDeleteMessage(msg, "me")}
+                        disabled={deletingMessageId === msg.id}
+                      >
+                        Delete for me
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={() => handleDeleteMessage(msg, "everyone")}
+                        disabled={
+                          deletingMessageId === msg.id || msg.senderId !== me?.id
+                        }
+                      >
+                        Delete for everyone
+                      </ContextMenuItem>
+                    </ContextMenuSubContent>
+                  </ContextMenuSub>
+                </ContextMenuContent>
+              </ContextMenu>
             </div>
           );
         })}
         <div ref={messagesEndRef} />
       </div>
+
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerContent className="md:hidden">
+          <DrawerHeader>
+            <DrawerTitle>
+              {drawerStep === "delete" ? "Delete message" : "Message actions"}
+            </DrawerTitle>
+          </DrawerHeader>
+          {drawerMessage && drawerStep === "actions" && (
+            <div className="space-y-2">
+              {drawerMessage.senderId === me?.id &&
+                !drawerMessage.isDeletedGlobally && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleStartEdit(drawerMessage);
+                      setDrawerOpen(false);
+                    }}
+                    className="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-800"
+                  >
+                    Edit
+                  </button>
+                )}
+              <button
+                type="button"
+                onClick={() => setDrawerStep("delete")}
+                className="w-full rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          )}
+          {drawerMessage && drawerStep === "delete" && (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteMessage(drawerMessage, "me");
+                  setDrawerOpen(false);
+                }}
+                className="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-800"
+              >
+                Delete for me
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteMessage(drawerMessage, "everyone");
+                  setDrawerOpen(false);
+                }}
+                disabled={drawerMessage.senderId !== me?.id}
+                className="w-full rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 disabled:opacity-60"
+              >
+                Delete for everyone
+              </button>
+              <button
+                type="button"
+                onClick={() => setDrawerStep("actions")}
+                className="w-full rounded-xl bg-white px-3 py-2 text-sm text-slate-500"
+              >
+                Back
+              </button>
+            </div>
+          )}
+        </DrawerContent>
+      </Drawer>
 
       {/* Input */}
       <div className="bg-white p-4 border-t border-slate-200">

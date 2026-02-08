@@ -22,6 +22,8 @@ interface ChatStore {
   ) => void;
   updateMessageContent: (convId: string, messageId: string, content: string) => void;
   removeMessage: (convId: string, messageId: string) => void;
+  markMessageDeletedFor: (convId: string, messageId: string, userId: string) => void;
+  markMessageDeletedGlobally: (convId: string, messageId: string) => void;
   updateLastMessage: (convId: string, text: string, timestamp: string) => void;
   addConversation: (conversation: Conversation) => void;
   setConversationUnreadCount: (convId: string, unreadCount: number) => void;
@@ -126,6 +128,39 @@ export const useChatStore = create<ChatStore>((set) => ({
         messages: {
           ...state.messages,
           [convId]: existingMessages.filter((msg) => msg.id !== messageId),
+        },
+      };
+    }),
+
+  markMessageDeletedFor: (convId, messageId, userId) =>
+    set((state) => {
+      const existingMessages = state.messages[convId] || [];
+      return {
+        messages: {
+          ...state.messages,
+          [convId]: existingMessages.map((msg) =>
+            msg.id === messageId
+              ? {
+                  ...msg,
+                  deletedFor: msg.deletedFor.includes(userId)
+                    ? msg.deletedFor
+                    : [...msg.deletedFor, userId],
+                }
+              : msg
+          ),
+        },
+      };
+    }),
+
+  markMessageDeletedGlobally: (convId, messageId) =>
+    set((state) => {
+      const existingMessages = state.messages[convId] || [];
+      return {
+        messages: {
+          ...state.messages,
+          [convId]: existingMessages.map((msg) =>
+            msg.id === messageId ? { ...msg, isDeletedGlobally: true } : msg
+          ),
         },
       };
     }),

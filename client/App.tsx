@@ -22,6 +22,7 @@ const App: React.FC = () => {
     setMessages,
     setLoading,
     updateUserPresence,
+    markMessageDeletedGlobally,
   } = useChatStore();
 
   useEffect(() => {
@@ -45,6 +46,8 @@ const App: React.FC = () => {
         content: msg.content,
         timestamp: msg.timestamp,
         readBy: msg.readBy ?? [],
+        deletedFor: msg.deletedFor ?? [],
+        isDeletedGlobally: msg.isDeletedGlobally ?? false,
         status: msg.status ?? "delivered",
       });
 
@@ -88,16 +91,31 @@ const App: React.FC = () => {
         updateUserPresence(payload.userId, payload.status);
       };
 
+      const handleMessageDeletedGlobally = (payload: {
+        messageId: string;
+        conversationId: string;
+      }) => {
+        markMessageDeletedGlobally(payload.conversationId, payload.messageId);
+      };
+
       socketService.on("new_message", handleNewMessage);
       socketService.on("message_received", handleMessageReceived);
       socketService.on("message_read", handleMessageRead);
       socketService.on("presence_update", handlePresenceUpdate);
+      socketService.on(
+        "message_deleted_globally",
+        handleMessageDeletedGlobally,
+      );
 
       return () => {
         socketService.off("new_message", handleNewMessage);
         socketService.off("message_received", handleMessageReceived);
         socketService.off("message_read", handleMessageRead);
         socketService.off("presence_update", handlePresenceUpdate);
+        socketService.off(
+          "message_deleted_globally",
+          handleMessageDeletedGlobally,
+        );
         socketService.disconnect();
       };
     }
@@ -110,6 +128,7 @@ const App: React.FC = () => {
     updateMessagesReadBy,
     user?.id,
     updateUserPresence,
+    markMessageDeletedGlobally,
   ]);
 
   useEffect(() => {

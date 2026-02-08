@@ -14,6 +14,10 @@ export const updateMessageSchema = z.object({
   content: z.string().min(1),
 })
 
+export const deleteMessageSchema = z.object({
+  deleteType: z.enum(['me', 'everyone']),
+})
+
 export const messagePayloadSchema = z.object({
   _id: z.string().optional(),
   conversationId: objectIdSchema,

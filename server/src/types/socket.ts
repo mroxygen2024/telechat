@@ -31,4 +31,5 @@ export interface ServerToClientEvents {
   typing_stop: (payload: TypingPayload) => void
   message_read: (payload: MessageReadPayload) => void
   presence_update: (payload: PresencePayload) => void
+  message_deleted_globally: (payload: { messageId: string; conversationId: string }) => void
 }

@@ -23,6 +23,15 @@ const messageSchema = new Schema(
       ref: 'User',
       default: [],
     },
+    deletedFor: {
+      type: [Schema.Types.ObjectId],
+      ref: 'User',
+      default: [],
+    },
+    isDeletedGlobally: {
+      type: Boolean,
+      default: false,
+    },
     timestamp: {
       type: Date,
       default: Date.now,

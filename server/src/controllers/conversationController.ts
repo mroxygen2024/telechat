@@ -53,6 +53,8 @@ export const getMessages: RequestHandler = async (req, res, next) => {
         conversationId: message.conversationId.toString(),
         senderId: message.senderId.toString(),
         readBy: (message.readBy || []).map((id) => id.toString()),
+        deletedFor: (message.deletedFor || []).map((id) => id.toString()),
+        isDeletedGlobally: message.isDeletedGlobally,
       }))
     )
   } catch (error) {

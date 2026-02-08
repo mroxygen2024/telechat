@@ -26,6 +26,8 @@ export interface MessageDTO {
   content: string
   timestamp: string | Date
   readBy?: string[]
+  deletedFor?: string[]
+  isDeletedGlobally?: boolean
 }
 
 export interface CreateMessageRequest {

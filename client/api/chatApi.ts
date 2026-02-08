@@ -20,6 +20,8 @@ type ApiMessage = {
   content: string;
   timestamp: string;
   readBy?: string[];
+  deletedFor?: string[];
+  isDeletedGlobally?: boolean;
 };
 
 const normalizeUser = (user: ApiUser): User => ({
@@ -35,6 +37,8 @@ const normalizeMessage = (message: ApiMessage): Message => ({
   content: message.content,
   timestamp: message.timestamp,
   readBy: message.readBy || [],
+  deletedFor: message.deletedFor || [],
+  isDeletedGlobally: message.isDeletedGlobally ?? false,
   status: 'delivered',
 });
 
@@ -89,17 +93,22 @@ export const chatApi = {
     return normalizeMessage(message);
   },
 
-  deleteMessage: async (messageId: string): Promise<{ id: string; conversationId: string }> => {
-    const result = await requestJson<{ _id: string; conversationId: string }>(
+  deleteMessage: async (
+    messageId: string,
+    deleteType: 'me' | 'everyone'
+  ): Promise<{ id: string; conversationId: string; deleteType: 'me' | 'everyone' }> => {
+    const result = await requestJson<{ _id: string; conversationId: string; deleteType: 'me' | 'everyone' }>(
       `/messages/${messageId}`,
       {
         method: 'DELETE',
+        body: JSON.stringify({ deleteType }),
       }
     );
 
     return {
       id: result._id,
       conversationId: result.conversationId,
+      deleteType: result.deleteType,
     };
   },
 

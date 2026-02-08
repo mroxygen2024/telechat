@@ -120,6 +120,8 @@ export const initSocket = (httpServer: HttpServer) => {
         content: message.content,
         timestamp: message.timestamp,
         readBy: (message.readBy || []).map((id) => id.toString()),
+        deletedFor: (message.deletedFor || []).map((id) => id.toString()),
+        isDeletedGlobally: message.isDeletedGlobally,
       }
 
       if (otherParticipantId) {

@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/authMiddleware.js'
 import { validate } from '../middleware/validate.js'
 import {
 	createMessageSchema,
+	deleteMessageSchema,
 	messageIdParamSchema,
 	updateMessageSchema,
 } from '../validators/messageValidators.js'
@@ -11,7 +12,13 @@ import {
 export const messageRoutes = Router()
 
 messageRoutes.post('/', requireAuth, validate(createMessageSchema), createMessage)
-messageRoutes.delete('/:id', requireAuth, validate(messageIdParamSchema, 'params'), deleteMessage)
+messageRoutes.delete(
+	'/:id',
+	requireAuth,
+	validate(messageIdParamSchema, 'params'),
+	validate(deleteMessageSchema),
+	deleteMessage
+)
 messageRoutes.patch(
 	'/:id',
 	requireAuth,
