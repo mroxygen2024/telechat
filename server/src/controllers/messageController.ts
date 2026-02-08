@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express'
 import { createMessageInConversation } from '../services/messageService.js'
 import { getIO } from '../sockets/index.js'
+import { Message } from '../models/Message.js'
 
 export const createMessage: RequestHandler = async (req, res, next) => {
   try {
@@ -43,6 +44,61 @@ export const createMessage: RequestHandler = async (req, res, next) => {
     }
 
     return res.status(201).json(serialized)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const deleteMessage: RequestHandler = async (req, res, next) => {
+  try {
+    const userId = req.userId as string
+    const { id } = req.params
+
+    const message = await Message.findById(id)
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' })
+    }
+
+    if (message.senderId.toString() !== userId) {
+      return res.status(403).json({ message: 'Forbidden' })
+    }
+
+    await message.deleteOne()
+
+    return res.json({ _id: id, conversationId: message.conversationId.toString() })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const updateMessage: RequestHandler = async (req, res, next) => {
+  try {
+    const userId = req.userId as string
+    const { id } = req.params
+    const { content } = req.body
+
+    const message = await Message.findById(id)
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' })
+    }
+
+    if (message.senderId.toString() !== userId) {
+      return res.status(403).json({ message: 'Forbidden' })
+    }
+
+    message.content = content
+    await message.save()
+
+    const serialized = {
+      _id: message._id.toString(),
+      conversationId: message.conversationId.toString(),
+      senderId: message.senderId.toString(),
+      content: message.content,
+      timestamp: message.timestamp,
+      readBy: (message.readBy || []).map((id) => id.toString()),
+    }
+
+    return res.json(serialized)
   } catch (error) {
     next(error)
   }

@@ -20,6 +20,8 @@ interface ChatStore {
     readerId: string,
     currentUserId?: string
   ) => void;
+  updateMessageContent: (convId: string, messageId: string, content: string) => void;
+  removeMessage: (convId: string, messageId: string) => void;
   updateLastMessage: (convId: string, text: string, timestamp: string) => void;
   addConversation: (conversation: Conversation) => void;
   setConversationUnreadCount: (convId: string, unreadCount: number) => void;
@@ -100,6 +102,30 @@ export const useChatStore = create<ChatStore>((set) => ({
               status: shouldMarkRead ? 'read' : msg.status,
             };
           }),
+        },
+      };
+    }),
+
+  updateMessageContent: (convId, messageId, content) =>
+    set((state) => {
+      const existingMessages = state.messages[convId] || [];
+      return {
+        messages: {
+          ...state.messages,
+          [convId]: existingMessages.map((msg) =>
+            msg.id === messageId ? { ...msg, content } : msg
+          ),
+        },
+      };
+    }),
+
+  removeMessage: (convId, messageId) =>
+    set((state) => {
+      const existingMessages = state.messages[convId] || [];
+      return {
+        messages: {
+          ...state.messages,
+          [convId]: existingMessages.filter((msg) => msg.id !== messageId),
         },
       };
     }),

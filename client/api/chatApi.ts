@@ -77,6 +77,32 @@ export const chatApi = {
     return normalizeMessage(message);
   },
 
+  updateMessage: async (messageId: string, content: string): Promise<Message> => {
+    const message = await requestJson<ApiMessage>(
+      `/messages/${messageId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ content }),
+      }
+    );
+
+    return normalizeMessage(message);
+  },
+
+  deleteMessage: async (messageId: string): Promise<{ id: string; conversationId: string }> => {
+    const result = await requestJson<{ _id: string; conversationId: string }>(
+      `/messages/${messageId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+
+    return {
+      id: result._id,
+      conversationId: result.conversationId,
+    };
+  },
+
   createConversation: async (participantId: string, userId: string): Promise<Conversation> => {
     const conversation = await requestJson<ApiConversation>(
       '/conversations',

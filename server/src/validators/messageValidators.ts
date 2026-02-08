@@ -6,6 +6,14 @@ export const createMessageSchema = z.object({
   content: z.string().min(1),
 })
 
+export const messageIdParamSchema = z.object({
+  id: objectIdSchema,
+})
+
+export const updateMessageSchema = z.object({
+  content: z.string().min(1),
+})
+
 export const messagePayloadSchema = z.object({
   _id: z.string().optional(),
   conversationId: objectIdSchema,

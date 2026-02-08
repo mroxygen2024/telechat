@@ -14,11 +14,19 @@ export const ChatWindow: React.FC = () => {
     updateLastMessage,
     updateMessagesReadBy,
     setConversationUnreadCount,
+    updateMessageContent,
+    removeMessage,
   } = useChatStore();
   const { user: me } = useAuthStore();
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(
+    null,
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<number | null>(null);
   const hasEmittedTypingRef = useRef(false);
@@ -64,6 +72,16 @@ export const ChatWindow: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [currentMessages]);
+
+  const updateConversationLast = (updatedMessages: Message[]) => {
+    if (!activeConversationId) return;
+    const last = updatedMessages[updatedMessages.length - 1];
+    if (last) {
+      updateLastMessage(activeConversationId, last.content, last.timestamp);
+    } else {
+      updateLastMessage(activeConversationId, "", "");
+    }
+  };
 
   useEffect(() => {
     if (!activeConversationId || !partner?.id) {
@@ -200,6 +218,61 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
+  const handleStartEdit = (message: Message) => {
+    setEditingMessageId(message.id);
+    setEditText(message.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditText("");
+  };
+
+  const handleSaveEdit = async (message: Message) => {
+    if (!activeConversationId || !editText.trim() || isSavingEdit) return;
+    setIsSavingEdit(true);
+    try {
+      const updated = await chatApi.updateMessage(message.id, editText.trim());
+      updateMessageContent(activeConversationId, message.id, updated.content);
+
+      if (currentMessages[currentMessages.length - 1]?.id === message.id) {
+        updateLastMessage(
+          activeConversationId,
+          updated.content,
+          updated.timestamp,
+        );
+      }
+
+      setEditingMessageId(null);
+      setEditText("");
+    } catch (error) {
+      console.error("Failed to update message", error);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteMessage = async (message: Message) => {
+    if (!activeConversationId || deletingMessageId) return;
+    const confirmed = window.confirm("Delete this message?");
+    if (!confirmed) return;
+    setDeletingMessageId(message.id);
+    try {
+      await chatApi.deleteMessage(message.id);
+      removeMessage(activeConversationId, message.id);
+      const updatedMessages = currentMessages.filter(
+        (msg) => msg.id !== message.id,
+      );
+      if (currentMessages[currentMessages.length - 1]?.id === message.id) {
+        updateConversationLast(updatedMessages);
+      }
+    } catch (error) {
+      console.error("Failed to delete message", error);
+    } finally {
+      setDeletingMessageId(null);
+    }
+  };
+
   if (!activeConversationId) {
     return (
       <div className="flex-1 h-full flex flex-col items-center justify-center bg-slate-50 p-8 text-center">
@@ -283,12 +356,13 @@ export const ChatWindow: React.FC = () => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3">
-        {currentMessages.map((msg, idx) => {
+        {currentMessages.map((msg) => {
           const isMe = msg.senderId === me?.id;
           const time = new Date(msg.timestamp).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           });
+          const isEditing = editingMessageId === msg.id;
 
           return (
             <div
@@ -296,15 +370,43 @@ export const ChatWindow: React.FC = () => {
               className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] md:max-w-[70%] px-4 py-2 rounded-2xl relative shadow-sm ${
+                className={`group max-w-[85%] md:max-w-[70%] px-4 py-2 rounded-2xl relative shadow-sm ${
                   isMe
                     ? "bg-blue-600 text-white rounded-br-none"
                     : "bg-white text-slate-800 rounded-bl-none"
                 }`}
               >
-                <p className="text-[15px] leading-relaxed break-words">
-                  {msg.content}
-                </p>
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="w-full bg-white/90 text-slate-800 rounded-xl p-2 text-sm focus:outline-none"
+                      rows={2}
+                    />
+                    <div className="flex items-center justify-end gap-2 text-xs">
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="px-2 py-1 rounded-full bg-white/70 text-slate-600 hover:bg-white"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveEdit(msg)}
+                        disabled={!editText.trim() || isSavingEdit}
+                        className="px-2 py-1 rounded-full bg-white text-blue-600 hover:bg-white/90 disabled:opacity-60"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[15px] leading-relaxed break-words">
+                    {msg.content}
+                  </p>
+                )}
                 <div
                   className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${isMe ? "text-blue-100" : "text-slate-400"}`}
                 >
@@ -317,6 +419,25 @@ export const ChatWindow: React.FC = () => {
                     </span>
                   )}
                 </div>
+                {isMe && !isEditing && (
+                  <div className="absolute -top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleStartEdit(msg)}
+                      className="text-xs bg-white/90 text-slate-600 px-2 py-0.5 rounded-full shadow-sm hover:bg-white"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteMessage(msg)}
+                      disabled={deletingMessageId === msg.id}
+                      className="text-xs bg-white/90 text-red-500 px-2 py-0.5 rounded-full shadow-sm hover:bg-white disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
