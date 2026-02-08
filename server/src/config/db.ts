@@ -6,5 +6,11 @@ export const connectDb = async (): Promise<void> => {
     throw new Error('MONGO_URI is not set')
   }
 
-  await mongoose.connect(env.mongoUri)
+  try {
+    await mongoose.connect(env.mongoUri)
+    console.log('MongoDB connected')
+  } catch (error) {
+    console.error('MongoDB connection failed', error)
+    throw error
+  }
 }
