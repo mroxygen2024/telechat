@@ -1,0 +1,5 @@
+{
+  "name": "TeleChat - Private One-to-One",
+  "description": "A high-performance Telegram-style chat application built with React, TypeScript, Zustand, and Tailwind CSS. Features include real-time messaging simulations, secure authentication flows, and a responsive dual-pane layout.",
+  "requestFramePermissions": []
+}
