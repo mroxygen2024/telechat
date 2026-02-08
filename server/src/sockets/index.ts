@@ -129,7 +129,7 @@ export const initSocket = (httpServer: HttpServer) => {
       io?.to(socket.data.userId).emit('message_received', serialized)
     })
 
-    socket.on('message_read', async (payload) => {
+    const handleMessageRead = async (payload: unknown) => {
       const parsed = messageReadPayloadSchema.safeParse(payload)
       if (!parsed.success) {
         return
@@ -191,7 +191,10 @@ export const initSocket = (httpServer: HttpServer) => {
           messageIds,
         })
       }
-    })
+    }
+
+    socket.on('message_read', handleMessageRead)
+    socket.on('mark_as_read', handleMessageRead)
 
     socket.on('disconnect', () => {
       const currentCount = userConnections.get(currentUserId) || 0

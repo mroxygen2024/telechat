@@ -113,7 +113,7 @@ export const ChatWindow: React.FC = () => {
 
     if (unreadMessageIds.length === 0) return;
 
-    socketService.emit("message_read", {
+    socketService.emit("mark_as_read", {
       conversationId: activeConversationId,
       readerId: me.id,
       messageIds: unreadMessageIds,

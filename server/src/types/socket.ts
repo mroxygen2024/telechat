@@ -21,6 +21,7 @@ export interface ClientToServerEvents {
   typing_start: (payload: TypingPayload) => void
   typing_stop: (payload: TypingPayload) => void
   message_read: (payload: MessageReadPayload) => void
+  mark_as_read: (payload: MessageReadPayload) => void
 }
 
 export interface ServerToClientEvents {
