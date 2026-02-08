@@ -3,6 +3,7 @@ import { useChatStore } from "../stores/useChatStore";
 import { useAuthStore } from "../stores/useAuthStore";
 import { User, Conversation } from "../types";
 import { chatApi } from "../api/chatApi";
+import { useErrorStore } from "../stores/useErrorStore";
 
 export const Sidebar: React.FC = () => {
   const {
@@ -12,6 +13,7 @@ export const Sidebar: React.FC = () => {
     addConversation,
   } = useChatStore();
   const { user: me, logout } = useAuthStore();
+  const addError = useErrorStore((state) => state.addError);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
@@ -75,6 +77,7 @@ export const Sidebar: React.FC = () => {
         setUsers(result);
       } catch (error: any) {
         setModalError(error.message || "Failed to load users");
+        addError(error.message || "Failed to load users");
       } finally {
         setIsLoadingUsers(false);
       }
@@ -96,6 +99,7 @@ export const Sidebar: React.FC = () => {
       setIsModalOpen(false);
     } catch (error: any) {
       setModalError(error.message || "Failed to create conversation");
+      addError(error.message || "Failed to create conversation");
     }
   };
 

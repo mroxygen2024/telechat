@@ -1,6 +1,7 @@
 
 import { io, type Socket } from 'socket.io-client';
 import { getApiBaseUrl } from '../api/http';
+import { useErrorStore } from '../stores/useErrorStore';
 
 type Listener = (data: any) => void;
 
@@ -16,6 +17,7 @@ class SocketService {
 
     this.socket.on('connect_error', (error) => {
       console.error('Socket connection error', error.message);
+      useErrorStore.getState().addError(error.message || 'Socket connection error');
     });
 
     Object.entries(this.listeners).forEach(([event, callbacks]) => {

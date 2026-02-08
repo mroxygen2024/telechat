@@ -4,6 +4,7 @@ import { useAuthStore } from "../stores/useAuthStore";
 import { chatApi } from "../api/chatApi";
 import { Message, User } from "../types";
 import { socketService } from "../services/socketService";
+import { useErrorStore } from "../stores/useErrorStore";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -30,6 +31,7 @@ export const ChatWindow: React.FC = () => {
     markMessageDeletedGlobally,
   } = useChatStore();
   const { user: me } = useAuthStore();
+  const addError = useErrorStore((state) => state.addError);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
@@ -242,6 +244,7 @@ export const ChatWindow: React.FC = () => {
       );
     } catch (error) {
       console.error("Failed to send message", error);
+      addError("Failed to send message");
     } finally {
       setIsSending(false);
     }
@@ -283,6 +286,7 @@ export const ChatWindow: React.FC = () => {
       setEditText("");
     } catch (error) {
       console.error("Failed to update message", error);
+      addError("Failed to update message");
     } finally {
       setIsSavingEdit(false);
     }
@@ -328,6 +332,7 @@ export const ChatWindow: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to delete message", error);
+      addError("Failed to delete message");
     } finally {
       setDeletingMessageId(null);
     }

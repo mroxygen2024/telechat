@@ -8,6 +8,8 @@ import { Sidebar } from "./components/Sidebar";
 import { ChatWindow } from "./components/ChatWindow";
 import { chatApi } from "./api/chatApi";
 import type { Message } from "./types";
+import { GlobalErrorToast } from "./components/ui/GlobalErrorToast";
+import { useErrorStore } from "./stores/useErrorStore";
 
 const App: React.FC = () => {
   const { isAuthenticated, checkAuth, user, token, authError, clearAuthError } =
@@ -24,6 +26,7 @@ const App: React.FC = () => {
     updateUserPresence,
     markMessageDeletedGlobally,
   } = useChatStore();
+  const addError = useErrorStore((state) => state.addError);
 
   useEffect(() => {
     checkAuth();
@@ -155,6 +158,7 @@ const App: React.FC = () => {
         );
       } catch (error) {
         console.error("Failed to load conversations", error);
+        addError("Failed to load conversations");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -172,6 +176,7 @@ const App: React.FC = () => {
     setMessages,
     updateLastMessage,
     setLoading,
+    addError,
   ]);
 
   if (!isAuthenticated) {
@@ -194,6 +199,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full bg-slate-100 overflow-hidden">
+      <GlobalErrorToast />
       <div className="flex w-full h-full max-w-[1600px] mx-auto shadow-2xl overflow-hidden">
         <Sidebar />
         <ChatWindow />
