@@ -13,3 +13,8 @@ export const messagePayloadSchema = z.object({
   content: z.string().min(1),
   timestamp: z.union([z.string(), z.date()]).optional(),
 })
+
+export const typingPayloadSchema = z.object({
+  conversationId: objectIdSchema,
+  senderId: objectIdSchema,
+})

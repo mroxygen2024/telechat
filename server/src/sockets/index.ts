@@ -3,8 +3,9 @@ import type { Server as HttpServer } from 'http'
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
 import type { ClientToServerEvents, ServerToClientEvents } from '../types/socket.js'
-import { messagePayloadSchema } from '../validators/messageValidators.js'
+import { messagePayloadSchema, typingPayloadSchema } from '../validators/messageValidators.js'
 import { createMessageInConversation } from '../services/messageService.js'
+import { Conversation } from '../models/Conversation.js'
 
 interface JwtPayload {
   userId: string
@@ -70,6 +71,76 @@ export const initSocket = (httpServer: HttpServer) => {
       }
 
       io?.to(socket.data.userId).emit('message_received', serialized)
+    })
+
+    socket.on('typing_start', async (payload) => {
+      const parsed = typingPayloadSchema.safeParse(payload)
+      if (!parsed.success) {
+        return
+      }
+
+      if (parsed.data.senderId !== socket.data.userId) {
+        return
+      }
+
+      const conversation = await Conversation.findById(parsed.data.conversationId).lean()
+      if (!conversation) {
+        return
+      }
+
+      const isParticipant = conversation.participants.some(
+        (participantId) => participantId.toString() === socket.data.userId
+      )
+
+      if (!isParticipant) {
+        return
+      }
+
+      const otherParticipant = conversation.participants.find(
+        (participantId) => participantId.toString() !== socket.data.userId
+      )
+
+      if (otherParticipant) {
+        io?.to(otherParticipant.toString()).emit('typing_start', {
+          conversationId: parsed.data.conversationId,
+          senderId: parsed.data.senderId,
+        })
+      }
+    })
+
+    socket.on('typing_stop', async (payload) => {
+      const parsed = typingPayloadSchema.safeParse(payload)
+      if (!parsed.success) {
+        return
+      }
+
+      if (parsed.data.senderId !== socket.data.userId) {
+        return
+      }
+
+      const conversation = await Conversation.findById(parsed.data.conversationId).lean()
+      if (!conversation) {
+        return
+      }
+
+      const isParticipant = conversation.participants.some(
+        (participantId) => participantId.toString() === socket.data.userId
+      )
+
+      if (!isParticipant) {
+        return
+      }
+
+      const otherParticipant = conversation.participants.find(
+        (participantId) => participantId.toString() !== socket.data.userId
+      )
+
+      if (otherParticipant) {
+        io?.to(otherParticipant.toString()).emit('typing_stop', {
+          conversationId: parsed.data.conversationId,
+          senderId: parsed.data.senderId,
+        })
+      }
     })
   })
 

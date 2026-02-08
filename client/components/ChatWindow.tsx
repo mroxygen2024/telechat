@@ -3,6 +3,7 @@ import { useChatStore } from "../stores/useChatStore";
 import { useAuthStore } from "../stores/useAuthStore";
 import { chatApi } from "../api/chatApi";
 import { Message, User } from "../types";
+import { socketService } from "../services/socketService";
 
 export const ChatWindow: React.FC = () => {
   const {
@@ -15,7 +16,10 @@ export const ChatWindow: React.FC = () => {
   const { user: me } = useAuthStore();
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<number | null>(null);
+  const hasEmittedTypingRef = useRef(false);
 
   const activeConv = conversations.find((c) => c.id === activeConversationId);
   const currentMessages = activeConversationId
@@ -59,6 +63,85 @@ export const ChatWindow: React.FC = () => {
     scrollToBottom();
   }, [currentMessages]);
 
+  useEffect(() => {
+    if (!activeConversationId || !partner?.id) {
+      setIsPartnerTyping(false);
+      return;
+    }
+
+    const handleTypingStart = (payload: {
+      conversationId: string;
+      senderId: string;
+    }) => {
+      if (
+        payload.conversationId === activeConversationId &&
+        payload.senderId === partner.id
+      ) {
+        setIsPartnerTyping(true);
+      }
+    };
+
+    const handleTypingStop = (payload: {
+      conversationId: string;
+      senderId: string;
+    }) => {
+      if (
+        payload.conversationId === activeConversationId &&
+        payload.senderId === partner.id
+      ) {
+        setIsPartnerTyping(false);
+      }
+    };
+
+    socketService.on("typing_start", handleTypingStart);
+    socketService.on("typing_stop", handleTypingStop);
+
+    return () => {
+      socketService.off("typing_start", handleTypingStart);
+      socketService.off("typing_stop", handleTypingStop);
+    };
+  }, [activeConversationId, partner?.id]);
+
+  const emitTypingStop = () => {
+    if (!activeConversationId || !me?.id) return;
+    if (!hasEmittedTypingRef.current) return;
+    socketService.emit("typing_stop", {
+      conversationId: activeConversationId,
+      senderId: me.id,
+    });
+    hasEmittedTypingRef.current = false;
+  };
+
+  const handleTyping = (value: string) => {
+    setInputText(value);
+
+    if (!activeConversationId || !me?.id) return;
+
+    const hasText = value.trim().length > 0;
+
+    if (hasText && !hasEmittedTypingRef.current) {
+      socketService.emit("typing_start", {
+        conversationId: activeConversationId,
+        senderId: me.id,
+      });
+      hasEmittedTypingRef.current = true;
+    }
+
+    if (!hasText) {
+      emitTypingStop();
+    }
+
+    if (typingTimeoutRef.current) {
+      window.clearTimeout(typingTimeoutRef.current);
+    }
+
+    if (hasText) {
+      typingTimeoutRef.current = window.setTimeout(() => {
+        emitTypingStop();
+      }, 2000);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !activeConversationId || !me || isSending) return;
@@ -66,6 +149,11 @@ export const ChatWindow: React.FC = () => {
     const messageText = inputText.trim();
     setInputText("");
     setIsSending(true);
+    emitTypingStop();
+    if (typingTimeoutRef.current) {
+      window.clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
 
     try {
       const newMessage: Message = await chatApi.sendMessage(
@@ -124,7 +212,11 @@ export const ChatWindow: React.FC = () => {
               {partner?.username}
             </h3>
             <p className="text-xs text-slate-400 font-medium">
-              {partner?.status === "online" ? "online" : "last seen recently"}
+              {isPartnerTyping
+                ? "User is typing..."
+                : partner?.status === "online"
+                  ? "online"
+                  : "last seen recently"}
             </p>
           </div>
         </div>
@@ -234,7 +326,7 @@ export const ChatWindow: React.FC = () => {
           <div className="flex-1">
             <textarea
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => handleTyping(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
