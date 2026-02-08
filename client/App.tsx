@@ -10,7 +10,8 @@ import { chatApi } from "./api/chatApi";
 import type { Message } from "./types";
 
 const App: React.FC = () => {
-  const { isAuthenticated, checkAuth, user, token } = useAuthStore();
+  const { isAuthenticated, checkAuth, user, token, authError, clearAuthError } =
+    useAuthStore();
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const {
     upsertMessage,
@@ -24,6 +25,12 @@ const App: React.FC = () => {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    if (authError) {
+      setAuthMode("login");
+    }
+  }, [authError]);
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -119,9 +126,19 @@ const App: React.FC = () => {
 
   if (!isAuthenticated) {
     return authMode === "signup" ? (
-      <SignupPage onSwitchToLogin={() => setAuthMode("login")} />
+      <SignupPage
+        onSwitchToLogin={() => {
+          clearAuthError();
+          setAuthMode("login");
+        }}
+      />
     ) : (
-      <LoginPage onSwitchToSignup={() => setAuthMode("signup")} />
+      <LoginPage
+        onSwitchToSignup={() => {
+          clearAuthError();
+          setAuthMode("signup");
+        }}
+      />
     );
   }
 

@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { useAuthStore } from '../stores/useAuthStore';
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:4000';
 
 export const getApiBaseUrl = () => API_BASE_URL;
@@ -32,9 +33,14 @@ export const requestJson = async <T>(
 
   if (!response.ok) {
     let message = `Request failed with status ${response.status}`;
+    if (response.status === 401 && requiresAuth) {
+      const { setSessionExpired } = useAuthStore.getState();
+      setSessionExpired();
+      message = 'Session expired, please login again';
+    }
     try {
       const errorBody = await response.json();
-      if (errorBody?.message) message = errorBody.message;
+      if (errorBody?.message && response.status !== 401) message = errorBody.message;
     } catch {
       // ignore JSON parse errors
     }

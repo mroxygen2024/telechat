@@ -15,6 +15,8 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onSwitchToLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const login = useAuthStore((state) => state.login);
+  const authError = useAuthStore((state) => state.authError);
+  const clearAuthError = useAuthStore((state) => state.clearAuthError);
 
   const validateInputs = () => {
     if (username.trim().length < 3) {
@@ -35,6 +37,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onSwitchToLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    clearAuthError();
 
     if (!validateInputs()) return;
 
@@ -48,6 +51,8 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onSwitchToLogin }) => {
       setIsLoading(false);
     }
   };
+
+  const displayError = error || authError || "";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -106,7 +111,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onSwitchToLogin }) => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              error={error}
+              error={displayError}
             />
 
             <div>

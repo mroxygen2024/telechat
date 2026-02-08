@@ -14,11 +14,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignup }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const login = useAuthStore((state) => state.login);
+  const authError = useAuthStore((state) => state.authError);
+  const clearAuthError = useAuthStore((state) => state.clearAuthError);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    clearAuthError();
 
     try {
       const response = await authApi.login(username, password);
@@ -29,6 +32,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignup }) => {
       setIsLoading(false);
     }
   };
+
+  const displayError = error || authError || "";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -81,7 +86,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignup }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              error={error}
+              error={displayError}
             />
 
             <div>
