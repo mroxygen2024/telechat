@@ -15,6 +15,7 @@ interface ChatStore {
   upsertMessage: (convId: string, message: Message) => void;
   updateMessageStatus: (convId: string, messageId: string, status: Message['status']) => void;
   updateLastMessage: (convId: string, text: string, timestamp: string) => void;
+  addConversation: (conversation: Conversation) => void;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -74,5 +75,12 @@ export const useChatStore = create<ChatStore>((set) => ({
     conversations: state.conversations.map(c => 
       c.id === convId ? { ...c, lastMessage: text, lastTimestamp: timestamp } : c
     )
-  }))
+  })),
+
+  addConversation: (conversation) => set((state) => {
+    const exists = state.conversations.some((c) => c.id === conversation.id)
+    return {
+      conversations: exists ? state.conversations : [conversation, ...state.conversations],
+    }
+  })
 }));

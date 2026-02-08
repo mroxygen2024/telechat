@@ -36,6 +36,12 @@ const normalizeMessage = (message: ApiMessage): Message => ({
 });
 
 export const chatApi = {
+  getUsers: async (search?: string): Promise<User[]> => {
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+    const users = await requestJson<ApiUser[]>(`/users${query}`);
+    return users.map(normalizeUser);
+  },
+
   getConversations: async (userId: string): Promise<Conversation[]> => {
     const conversations = await requestJson<ApiConversation[]>('/conversations');
 
@@ -66,5 +72,24 @@ export const chatApi = {
     );
 
     return normalizeMessage(message);
+  },
+
+  createConversation: async (participantId: string, userId: string): Promise<Conversation> => {
+    const conversation = await requestJson<ApiConversation>(
+      '/conversations',
+      {
+        method: 'POST',
+        body: JSON.stringify({ participantId }),
+      }
+    );
+
+    const unreadCountMap = conversation.unreadCount || {};
+    const unreadCount = Number(unreadCountMap[userId] ?? 0);
+
+    return {
+      id: conversation._id,
+      participants: (conversation.participants || []).map(normalizeUser),
+      unreadCount,
+    };
   },
 };

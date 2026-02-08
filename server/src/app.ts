@@ -3,6 +3,7 @@ import cors from 'cors'
 import { authRoutes } from './routes/authRoutes.js'
 import { conversationRoutes } from './routes/conversationRoutes.js'
 import { messageRoutes } from './routes/messageRoutes.js'
+import { userRoutes } from './routes/userRoutes.js'
 import { errorHandler } from './middleware/errorMiddleware.js'
 import { env } from './config/env.js'
 import morgan from 'morgan'
@@ -24,6 +25,7 @@ export const createApp = () => {
   app.use('/auth', authRoutes)
   app.use('/conversations', conversationRoutes)
   app.use('/messages', messageRoutes)
+  app.use('/users', userRoutes)
 
   app.use(errorHandler)
 
