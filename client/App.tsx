@@ -1,44 +1,119 @@
-
-import React, { useEffect } from 'react';
-import { useAuthStore } from './stores/useAuthStore';
-import { useChatStore } from './stores/useChatStore';
-import { socketService } from './services/socketService';
-import { LoginPage } from './pages/LoginPage';
-import { Sidebar } from './components/Sidebar';
-import { ChatWindow } from './components/ChatWindow';
+import React, { useEffect } from "react";
+import { useAuthStore } from "./stores/useAuthStore";
+import { useChatStore } from "./stores/useChatStore";
+import { socketService } from "./services/socketService";
+import { LoginPage } from "./pages/LoginPage";
+import { Sidebar } from "./components/Sidebar";
+import { ChatWindow } from "./components/ChatWindow";
+import { chatApi } from "./api/chatApi";
+import type { Message } from "./types";
 
 const App: React.FC = () => {
-  const { isAuthenticated, checkAuth } = useAuthStore();
-  const { addMessage, updateLastMessage } = useChatStore();
+  const { isAuthenticated, checkAuth, user, token } = useAuthStore();
+  const {
+    upsertMessage,
+    updateMessageStatus,
+    updateLastMessage,
+    setConversations,
+    setMessages,
+    setLoading,
+  } = useChatStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      socketService.connect();
+    if (isAuthenticated && token) {
+      socketService.connect(token);
+
+      const normalizeMessage = (msg: any): Message => ({
+        id: msg._id ?? msg.id,
+        conversationId: msg.conversationId,
+        senderId: msg.senderId,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        status: msg.status ?? "delivered",
+      });
 
       const handleNewMessage = (msg: any) => {
-        addMessage(msg.conversationId, msg);
-        updateLastMessage(msg.conversationId, msg.content, msg.timestamp);
+        const normalized = normalizeMessage(msg);
+        upsertMessage(normalized.conversationId, normalized);
+        updateLastMessage(
+          normalized.conversationId,
+          normalized.content,
+          normalized.timestamp,
+        );
       };
 
       const handleMessageReceived = (msg: any) => {
-        // Logic to update UI with double checks or status could go here
-        console.log('Message delivered ACK:', msg.id);
+        const normalized = normalizeMessage(msg);
+        updateMessageStatus(
+          normalized.conversationId,
+          normalized.id,
+          "delivered",
+        );
       };
 
-      socketService.on('new_message', handleNewMessage);
-      socketService.on('message_received', handleMessageReceived);
+      socketService.on("new_message", handleNewMessage);
+      socketService.on("message_received", handleMessageReceived);
 
       return () => {
-        socketService.off('new_message', handleNewMessage);
-        socketService.off('message_received', handleMessageReceived);
+        socketService.off("new_message", handleNewMessage);
+        socketService.off("message_received", handleMessageReceived);
         socketService.disconnect();
       };
     }
-  }, [isAuthenticated, addMessage, updateLastMessage]);
+  }, [
+    isAuthenticated,
+    token,
+    upsertMessage,
+    updateLastMessage,
+    updateMessageStatus,
+  ]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const conversations = await chatApi.getConversations(user.id);
+        if (!isMounted) return;
+        setConversations(conversations);
+
+        await Promise.all(
+          conversations.map(async (conversation) => {
+            const messages = await chatApi.getMessages(conversation.id);
+            if (!isMounted) return;
+            setMessages(conversation.id, messages);
+            if (messages.length > 0) {
+              const last = messages[messages.length - 1];
+              updateLastMessage(conversation.id, last.content, last.timestamp);
+            }
+          }),
+        );
+      } catch (error) {
+        console.error("Failed to load conversations", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    isAuthenticated,
+    user?.id,
+    setConversations,
+    setMessages,
+    updateLastMessage,
+    setLoading,
+  ]);
 
   if (!isAuthenticated) {
     return <LoginPage />;
