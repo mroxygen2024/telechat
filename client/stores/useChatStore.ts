@@ -23,6 +23,7 @@ interface ChatStore {
   updateLastMessage: (convId: string, text: string, timestamp: string) => void;
   addConversation: (conversation: Conversation) => void;
   setConversationUnreadCount: (convId: string, unreadCount: number) => void;
+  updateUserPresence: (userId: string, status: 'online' | 'offline') => void;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -121,5 +122,15 @@ export const useChatStore = create<ChatStore>((set) => ({
       conversations: state.conversations.map((conv) =>
         conv.id === convId ? { ...conv, unreadCount } : conv
       ),
+    })),
+
+  updateUserPresence: (userId, status) =>
+    set((state) => ({
+      conversations: state.conversations.map((conv) => ({
+        ...conv,
+        participants: conv.participants.map((participant) =>
+          participant.id === userId ? { ...participant, status } : participant
+        ),
+      })),
     })),
 }));

@@ -243,7 +243,7 @@ export const ChatWindow: React.FC = () => {
                 ? "User is typing..."
                 : partner?.status === "online"
                   ? "online"
-                  : "last seen recently"}
+                  : "offline"}
             </p>
           </div>
         </div>

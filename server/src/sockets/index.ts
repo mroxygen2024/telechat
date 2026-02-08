@@ -18,6 +18,25 @@ interface JwtPayload {
 }
 
 let io: Server<ClientToServerEvents, ServerToClientEvents> | null = null
+const userConnections = new Map<string, number>()
+
+const getRelevantParticipants = async (userId: string) => {
+  const conversations = await Conversation.find({ participants: userId })
+    .select('participants')
+    .lean()
+
+  const participantIds = new Set<string>()
+  conversations.forEach((conversation) => {
+    conversation.participants.forEach((participantId) => {
+      const participant = participantId.toString()
+      if (participant !== userId) {
+        participantIds.add(participant)
+      }
+    })
+  })
+
+  return Array.from(participantIds)
+}
 
 export const initSocket = (httpServer: HttpServer) => {
   io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
@@ -44,6 +63,36 @@ export const initSocket = (httpServer: HttpServer) => {
   })
 
   io.on('connection', (socket) => {
+    const currentUserId = socket.data.userId as string
+    const existingConnections = userConnections.get(currentUserId) || 0
+    userConnections.set(currentUserId, existingConnections + 1)
+
+    if (existingConnections === 0) {
+      getRelevantParticipants(currentUserId)
+        .then((participantIds) => {
+          participantIds.forEach((participantId) => {
+            io?.to(participantId).emit('presence_update', {
+              userId: currentUserId,
+              status: 'online',
+            })
+          })
+        })
+        .catch(() => {})
+    }
+
+    getRelevantParticipants(currentUserId)
+      .then((participantIds) => {
+        participantIds.forEach((participantId) => {
+          if ((userConnections.get(participantId) || 0) > 0) {
+            io?.to(currentUserId).emit('presence_update', {
+              userId: participantId,
+              status: 'online',
+            })
+          }
+        })
+      })
+      .catch(() => {})
+
     socket.on('send_message', async (payload) => {
       const parsed = messagePayloadSchema.safeParse(payload)
       if (!parsed.success) {
@@ -141,6 +190,25 @@ export const initSocket = (httpServer: HttpServer) => {
           readerId: parsed.data.readerId,
           messageIds,
         })
+      }
+    })
+
+    socket.on('disconnect', () => {
+      const currentCount = userConnections.get(currentUserId) || 0
+      if (currentCount <= 1) {
+        userConnections.delete(currentUserId)
+        getRelevantParticipants(currentUserId)
+          .then((participantIds) => {
+            participantIds.forEach((participantId) => {
+              io?.to(participantId).emit('presence_update', {
+                userId: currentUserId,
+                status: 'offline',
+              })
+            })
+          })
+          .catch(() => {})
+      } else {
+        userConnections.set(currentUserId, currentCount - 1)
       }
     })
 

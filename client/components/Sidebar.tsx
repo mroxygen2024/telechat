@@ -190,9 +190,12 @@ export const Sidebar: React.FC = () => {
             >
               <div className="relative flex-shrink-0">
                 {renderAvatar(partner, "w-12 h-12", "text-base")}
-                {partner.status === "online" && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                )}
+                <div
+                  className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
+                    partner.status === "online" ? "bg-green-500" : "bg-slate-300"
+                  }`}
+                  title={partner.status === "online" ? "Online" : "Offline"}
+                ></div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline">

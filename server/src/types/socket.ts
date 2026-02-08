@@ -11,6 +11,11 @@ export interface MessageReadPayload {
   messageIds?: string[]
 }
 
+export interface PresencePayload {
+  userId: string
+  status: 'online' | 'offline'
+}
+
 export interface ClientToServerEvents {
   send_message: (payload: MessageDTO) => void
   typing_start: (payload: TypingPayload) => void
@@ -24,4 +29,5 @@ export interface ServerToClientEvents {
   typing_start: (payload: TypingPayload) => void
   typing_stop: (payload: TypingPayload) => void
   message_read: (payload: MessageReadPayload) => void
+  presence_update: (payload: PresencePayload) => void
 }

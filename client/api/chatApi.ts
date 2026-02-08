@@ -25,6 +25,7 @@ type ApiMessage = {
 const normalizeUser = (user: ApiUser): User => ({
   id: user._id,
   username: user.username,
+  status: 'offline',
 });
 
 const normalizeMessage = (message: ApiMessage): Message => ({

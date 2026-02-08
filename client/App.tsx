@@ -21,6 +21,7 @@ const App: React.FC = () => {
     setConversations,
     setMessages,
     setLoading,
+    updateUserPresence,
   } = useChatStore();
 
   useEffect(() => {
@@ -80,14 +81,23 @@ const App: React.FC = () => {
         );
       };
 
+      const handlePresenceUpdate = (payload: {
+        userId: string;
+        status: "online" | "offline";
+      }) => {
+        updateUserPresence(payload.userId, payload.status);
+      };
+
       socketService.on("new_message", handleNewMessage);
       socketService.on("message_received", handleMessageReceived);
       socketService.on("message_read", handleMessageRead);
+      socketService.on("presence_update", handlePresenceUpdate);
 
       return () => {
         socketService.off("new_message", handleNewMessage);
         socketService.off("message_received", handleMessageReceived);
         socketService.off("message_read", handleMessageRead);
+        socketService.off("presence_update", handlePresenceUpdate);
         socketService.disconnect();
       };
     }
@@ -99,6 +109,7 @@ const App: React.FC = () => {
     updateMessageStatus,
     updateMessagesReadBy,
     user?.id,
+    updateUserPresence,
   ]);
 
   useEffect(() => {
