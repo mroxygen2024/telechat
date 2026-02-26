@@ -1,80 +1,300 @@
-# Telechat Backend (Node.js + Express + TypeScript)
+# TeleChat: Real-Time Telegram-Style Chat Application
 
-Implements the provided JSON backend spec using Express, MongoDB (Mongoose), JWT auth, and Socket.IO.
 
-## Features
+## Table of Contents
 
-- JWT authentication
-- MongoDB models: User, Conversation, Message
-- REST endpoints for login, conversations, messages
-- Socket.IO real-time messaging (`send_message`, `new_message`, `message_received`)
-- Zod input validation
+- [Tech Stack](#tech-stack)
+- [Architecture Overview](#architecture-overview)
+- [Features Breakdown](#features-breakdown)
+- [Folder Structure](#folder-structure)
+- [Environment Variables](#environment-variables)
+- [Installation Instructions](#installation-instructions)
+- [API Overview](#api-overview)
+- [Future Improvements](#future-improvements)
+- [Author](#author)
 
-## Setup
+---
 
-1. Copy env file:
-   - `.env.example` → `.env`
-2. Update values:
-   - `MONGO_URI`, `JWT_SECRET`, `CLIENT_ORIGIN`
+...existing code...
+# TeleChat: Real-Time Telegram-Style Chat Application
 
-## Install
+TeleChat is a full-stack, real-time chat application inspired by Telegram. It enables secure, fast, and reliable one-to-one messaging with modern UI and robust features. Built with React, Node.js, TypeScript, and MongoDB, TeleChat demonstrates scalable architecture and advanced real-time capabilities suitable for production-grade messaging platforms.
 
+## Key Features
+
+- JWT-based authentication (login/signup)
+- Private one-to-one conversations
+- Real-time messaging with Socket.IO
+- Online/offline presence tracking
+- Typing indicators
+- Unread message counts
+- Delivery and read receipts
+- Edit and delete messages (for self or everyone)
+- Message and user search
+- Optimistic UI updates
+- Robust error handling
+- Socket reconnection management
+
+---
+
+## Demo / Screenshots
+
+> _Demo and screenshots coming soon._
+
+---
+
+## Tech Stack
+
+### Frontend
+
+- **React** (TypeScript)
+- **Zustand** (state management)
+- **TailwindCSS** (utility-first styling)
+- **shadcn/ui** (component library)
+- **Axios** (HTTP client)
+- **Socket.IO client** (real-time communication)
+
+### Backend
+
+- **Node.js** (TypeScript)
+- **Express** (REST API)
+- **MongoDB** (database)
+- **Mongoose** (ODM)
+- **JWT** (authentication)
+- **Socket.IO** (real-time layer)
+
+### Real-Time Layer
+
+- **Socket.IO** for bi-directional communication (presence, messaging, receipts)
+
+### Database
+
+- **MongoDB** for storing users, conversations, and messages
+
+---
+
+## Architecture Overview
+
+### Client-Server Interaction
+
+- **REST API**: Handles authentication, user search, conversation management, and message CRUD operations.
+- **Socket.IO**: Manages real-time events (messaging, presence, typing, receipts).
+
+### Authentication Flow
+
+- Users sign up or log in via REST endpoints.
+- JWT tokens are issued and stored client-side.
+- Protected routes and Socket.IO connections require valid JWT.
+
+### Presence Tracking
+
+- Socket.IO tracks user connections/disconnections.
+- Online/offline status is broadcast to relevant contacts.
+
+### Message Lifecycle
+
+1. **Send**: Client emits message via Socket.IO.
+2. **Delivered**: Server acknowledges and broadcasts delivery.
+3. **Read**: Client marks message as read; server updates status and notifies sender.
+
+---
+
+## Features Breakdown
+
+### Authentication
+
+- Secure signup and login with JWT
+- Token-based session management
+
+### Conversations
+
+- One-to-one private chats
+- User search to start new conversations
+
+### Messaging
+
+- Real-time send/receive
+- Delivery and read receipts
+- Unread message counts
+- Optimistic UI updates
+
+### Real-Time Features
+
+- Presence tracking (online/offline)
+- Typing indicators
+- Socket reconnection handling
+
+### Editing & Deletion
+
+- Edit messages (right-click/long-press)
+- Delete for me / delete for everyone
+
+### Presence System
+
+- Socket.IO tracks and broadcasts user status
+
+### Unread Counts Logic
+
+- Server maintains unread counts per conversation
+- UI updates in real-time as messages are read
+
+---
+
+## Folder Structure
+
+````plaintext
+telechat/
+├── client/                # React frontend
+│   ├── src/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   ├── store/         # Zustand state
+│   │   ├── utils/
+│   │   └── App.tsx
+│   ├── public/
+│   └── package.json
+├── server/                # Node.js backend
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── middleware/
+│   │   ├── socket/
+│   │   └── app.ts
+│   ├── .env.example
+│   └── package.json
+````
+
+---
+
+## Environment Variables
+
+Example `.env` configuration for backend:
+
+````env
+// filepath: server/.env.example
+MONGO_URI=mongodb://localhost:27017/telechat
+JWT_SECRET=your_jwt_secret
+PORT=5000
+SOCKET_IO_CORS_ORIGIN=http://localhost:3000
+````
+
+---
+
+## Installation Instructions
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/telechat.git
+cd telechat
 ```
+
+### 2. Install Dependencies
+
+#### Backend
+
+```bash
+cd server
 npm install
 ```
 
-## Run (dev)
+#### Frontend
 
+```bash
+cd ../client
+npm install
 ```
+
+### 3. Setup MongoDB
+
+- Ensure MongoDB is running locally or update `MONGO_URI` in `.env` to your remote instance.
+
+### 4. Run in Development Mode
+
+#### Backend
+
+```bash
+cd server
 npm run dev
 ```
 
-## API
+#### Frontend
 
-### POST /auth/login
-
-Request:
-
-```json
-{ "username": "string", "password": "string" }
+```bash
+cd client
+npm start
 ```
 
-Response:
+### 5. Build for Production
 
-```json
-{ "user": { "_id": "string", "username": "string" }, "token": "string" }
+#### Backend
+
+```bash
+cd server
+npm run build
 ```
 
-### GET /conversations (JWT required)
+#### Frontend
 
-Returns conversations with populated `participants`.
-
-### GET /conversations/:id/messages (JWT required)
-
-Returns all messages in the conversation (oldest → newest).
-
-### POST /messages (JWT required)
-
-Request:
-
-```json
-{ "conversationId": "string", "content": "string" }
+```bash
+cd client
+npm run build
 ```
 
-Response: `Message`
+---
 
-## Socket.IO
+## API Overview
 
-- Client must connect with JWT:
-  ```js
-  const socket = io("http://localhost:4000", { auth: { token } });
-  ```
-- Events:
-  - `send_message` (client → server) payload: `Message`
-  - `new_message` (server → other participant) payload: `Message`
-  - `message_received` (server → sender) payload: `Message`
+### Auth Endpoints
 
-## Notes
+- `POST /api/auth/signup` — Register new user
+- `POST /api/auth/login` — Authenticate user
 
-- This backend expects users to exist in MongoDB (no signup endpoint in spec).
-- Passwords are hashed with bcrypt on save.
+### Conversation Endpoints
+
+- `GET /api/conversations` — List user conversations
+- `POST /api/conversations` — Start new conversation
+- `GET /api/conversations/:id` — Get conversation details
+
+### Message Endpoints
+
+- `GET /api/messages/:conversationId` — Fetch messages
+- `POST /api/messages` — Send message
+- `PUT /api/messages/:id` — Edit message
+- `DELETE /api/messages/:id` — Delete message
+
+### Socket Events
+
+- `connect` / `disconnect`
+- `message:send`
+- `message:delivered`
+- `message:read`
+- `presence:update`
+- `typing:start` / `typing:stop`
+- `message:edit`
+- `message:delete`
+
+---
+
+## Future Improvements
+
+- Group chats
+- File sharing (images, documents)
+- Voice messages
+- Message reactions
+- End-to-end encryption
+
+---
+
+## Author
+
+**Fuad**
+
+- [GitHub](https://github.com/yourusername)
+- [LinkedIn](https://linkedin.com/in/yourprofile)
+
+---
+
+> For questions or contributions, please open an issue or submit a pull request.
