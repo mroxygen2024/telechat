@@ -189,7 +189,7 @@ Example `.env` configuration for backend:
 // filepath: server/.env.example
 MONGO_URI=mongodb://localhost:27017/telechat
 JWT_SECRET=your_jwt_secret
-PORT=5000
+PORT=4000
 SOCKET_IO_CORS_ORIGIN=http://localhost:3000
 ````
 
@@ -237,7 +237,7 @@ npm run dev
 
 ```bash
 cd client
-npm start
+npm run dev
 ```
 
 ### 5. Build for Production
