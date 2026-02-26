@@ -15,7 +15,6 @@
 [![JWT](https://img.shields.io/badge/JWT-Auth-ea580c?logo=jsonwebtokens&logoColor=white)]()
 [![License](https://img.shields.io/badge/License-MIT-blue)]()
 [![Build](https://img.shields.io/badge/Build-NPM_Scripts-lightgrey)]()
-# TeleChat: Real-Time Telegram-Style Chat Application
 
 
 ## Table of Contents
