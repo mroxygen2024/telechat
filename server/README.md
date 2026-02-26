@@ -1,5 +1,22 @@
 # TeleChat: Real-Time Telegram-Style Chat Application
 
+[![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)]()
+[![Vite](https://img.shields.io/badge/Vite-4.x-646cff?logo=vite&logoColor=white)]()
+[![Zustand](https://img.shields.io/badge/Zustand-State_Management-ff9800?logo=react&logoColor=white)]()
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-06b6d4?logo=tailwindcss&logoColor=white)]()
+[![shadcn/ui](https://img.shields.io/badge/shadcn--ui-Components-18181b?logo=react&logoColor=white)]()
+[![Axios](https://img.shields.io/badge/Axios-HTTP_Client-5a29e4?logo=axios&logoColor=white)]()
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-Realtime-010101?logo=socket.io&logoColor=white)]()
+[![Node.js](https://img.shields.io/badge/Node.js-20-339933?logo=node.js&logoColor=white)]()
+[![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)]()
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47a248?logo=mongodb&logoColor=white)]()
+[![Mongoose](https://img.shields.io/badge/Mongoose-ODM-a020f0?logo=mongoose&logoColor=white)]()
+[![JWT](https://img.shields.io/badge/JWT-Auth-ea580c?logo=jsonwebtokens&logoColor=white)]()
+[![License](https://img.shields.io/badge/License-MIT-blue)]()
+[![Build](https://img.shields.io/badge/Build-NPM_Scripts-lightgrey)]()
+# TeleChat: Real-Time Telegram-Style Chat Application
+
 
 ## Table of Contents
 
@@ -15,7 +32,6 @@
 
 ---
 
-...existing code...
 # TeleChat: Real-Time Telegram-Style Chat Application
 
 TeleChat is a full-stack, real-time chat application inspired by Telegram. It enables secure, fast, and reliable one-to-one messaging with modern UI and robust features. Built with React, Node.js, TypeScript, and MongoDB, TeleChat demonstrates scalable architecture and advanced real-time capabilities suitable for production-grade messaging platforms.
@@ -292,7 +308,6 @@ npm run build
 
 **Fuad**
 
-- [GitHub](https://github.com/yourusername)
 - [LinkedIn](https://linkedin.com/in/yourprofile)
 
 ---
