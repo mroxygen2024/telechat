@@ -31,8 +31,6 @@
 
 ---
 
-# TeleChat: Real-Time Telegram-Style Chat Application
-
 TeleChat is a full-stack, real-time chat application inspired by Telegram. It enables secure, fast, and reliable one-to-one messaging with modern UI and robust features. Built with React, Node.js, TypeScript, and MongoDB, TeleChat demonstrates scalable architecture and advanced real-time capabilities suitable for production-grade messaging platforms.
 
 ## Key Features
