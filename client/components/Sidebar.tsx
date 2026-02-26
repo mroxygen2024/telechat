@@ -104,7 +104,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-full md:w-80 h-full bg-white border-r border-slate-200 flex flex-col">
+    <aside className="w-full h-full bg-white border-r border-slate-200 flex flex-col md:w-80 lg:w-96">
       {/* Header */}
       <div className="p-4 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ export const Sidebar: React.FC = () => {
             <div
               key={conv.id}
               onClick={() => setActiveConversation(conv.id)}
-              className={`px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors ${isActive ? "bg-blue-50 border-r-4 border-blue-500" : "hover:bg-slate-50"}`}
+              className={`px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors rounded-xl md:rounded-none ${isActive ? "bg-blue-50 border-r-4 border-blue-500" : "hover:bg-slate-50"}`}
             >
               <div className="relative flex-shrink-0">
                 {renderAvatar(partner, "w-12 h-12", "text-base")}
@@ -217,7 +217,7 @@ export const Sidebar: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <p className="text-xs text-slate-500 truncate mt-0.5">
+                  <p className="text-xs text-slate-500 truncate mt-0.5 break-words">
                     {conv.lastMessage || "No messages yet"}
                   </p>
                   {conv.unreadCount > 0 && (

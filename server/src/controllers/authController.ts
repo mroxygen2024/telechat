@@ -6,12 +6,17 @@ export const login: RequestHandler = async (req, res, next) => {
   try {
     const { username, password } = req.body
 
-    const user = await User.findOne({ username })
+    console.log('Login attempt:', req.body);
+    const user = await User.findOne({ username });
+    console.log('User found:', user);
+    
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' })
     }
 
+
     const isMatch = await user.comparePassword(password)
+    console.log('Password match:', isMatch);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' })
     }

@@ -32,7 +32,9 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.comparePassword = async function (plain: string): Promise<boolean> {
   return bcrypt.compare(plain, this.password)
+
 }
+
 
 userSchema.set('toJSON', {
   transform: (_doc, ret: { password?: string }) => {

@@ -222,9 +222,9 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-full bg-slate-100 overflow-hidden">
+    <div className="flex flex-col h-screen w-full bg-slate-100 overflow-hidden">
       <GlobalErrorToast />
-      <div className="flex w-full h-full max-w-[1600px] mx-auto shadow-2xl overflow-hidden">
+      <div className="flex flex-1 w-full h-full shadow-2xl overflow-hidden">
         <Sidebar />
         <ChatWindow />
       </div>
