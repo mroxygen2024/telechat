@@ -16,6 +16,10 @@ export interface PresencePayload {
   status: 'online' | 'offline'
 }
 
+export interface MissedMessagesPayload {
+  messages: MessageDTO[]
+}
+
 export interface ClientToServerEvents {
   send_message: (payload: MessageDTO) => void
   typing_start: (payload: TypingPayload) => void
@@ -31,5 +35,6 @@ export interface ServerToClientEvents {
   typing_stop: (payload: TypingPayload) => void
   message_read: (payload: MessageReadPayload) => void
   presence_update: (payload: PresencePayload) => void
+  missed_messages: (payload: MissedMessagesPayload) => void
   message_deleted_globally: (payload: { messageId: string; conversationId: string }) => void
 }

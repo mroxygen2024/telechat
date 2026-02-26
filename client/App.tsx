@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAuthStore } from "./stores/useAuthStore";
 import { useChatStore } from "./stores/useChatStore";
 import { socketService } from "./services/socketService";
@@ -15,6 +15,7 @@ const App: React.FC = () => {
   const { isAuthenticated, checkAuth, user, token, authError, clearAuthError } =
     useAuthStore();
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const addError = useErrorStore((state) => state.addError);
   const {
     upsertMessage,
     updateMessageStatus,
@@ -26,7 +27,39 @@ const App: React.FC = () => {
     updateUserPresence,
     markMessageDeletedGlobally,
   } = useChatStore();
-  const addError = useErrorStore((state) => state.addError);
+
+  const refreshChatState = useCallback(async () => {
+    if (!isAuthenticated || !user?.id) return;
+    try {
+      setLoading(true);
+      const conversations = await chatApi.getConversations(user.id);
+      setConversations(conversations);
+
+      await Promise.all(
+        conversations.map(async (conversation) => {
+          const messages = await chatApi.getMessages(conversation.id);
+          setMessages(conversation.id, messages);
+          if (messages.length > 0) {
+            const last = messages[messages.length - 1];
+            updateLastMessage(conversation.id, last.content, last.timestamp);
+          }
+        }),
+      );
+    } catch (error) {
+      console.error("Failed to refresh conversations", error);
+      addError("Failed to refresh conversations");
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    isAuthenticated,
+    user?.id,
+    setConversations,
+    setMessages,
+    updateLastMessage,
+    setLoading,
+    addError,
+  ]);
 
   useEffect(() => {
     checkAuth();
@@ -101,6 +134,33 @@ const App: React.FC = () => {
         markMessageDeletedGlobally(payload.conversationId, payload.messageId);
       };
 
+      const handleMissedMessages = (payload: { messages: any[] }) => {
+        payload.messages.forEach((msg) => {
+          const normalized = normalizeMessage(msg);
+          upsertMessage(normalized.conversationId, normalized);
+
+          const { conversations } = useChatStore.getState();
+          const conversation = conversations.find(
+            (item) => item.id === normalized.conversationId,
+          );
+          const currentTimestamp = conversation?.lastTimestamp
+            ? new Date(conversation.lastTimestamp).getTime()
+            : 0;
+          const incomingTimestamp = new Date(normalized.timestamp).getTime();
+          if (incomingTimestamp >= currentTimestamp) {
+            updateLastMessage(
+              normalized.conversationId,
+              normalized.content,
+              normalized.timestamp,
+            );
+          }
+        });
+      };
+
+      const handleSocketConnect = () => {
+        refreshChatState();
+      };
+
       socketService.on("new_message", handleNewMessage);
       socketService.on("message_received", handleMessageReceived);
       socketService.on("message_read", handleMessageRead);
@@ -109,6 +169,8 @@ const App: React.FC = () => {
         "message_deleted_globally",
         handleMessageDeletedGlobally,
       );
+      socketService.on("missed_messages", handleMissedMessages);
+      socketService.on("connect", handleSocketConnect);
 
       return () => {
         socketService.off("new_message", handleNewMessage);
@@ -119,6 +181,8 @@ const App: React.FC = () => {
           "message_deleted_globally",
           handleMessageDeletedGlobally,
         );
+        socketService.off("missed_messages", handleMissedMessages);
+        socketService.off("connect", handleSocketConnect);
         socketService.disconnect();
       };
     }
@@ -132,52 +196,12 @@ const App: React.FC = () => {
     user?.id,
     updateUserPresence,
     markMessageDeletedGlobally,
+    refreshChatState,
   ]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
-
-    let isMounted = true;
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const conversations = await chatApi.getConversations(user.id);
-        if (!isMounted) return;
-        setConversations(conversations);
-
-        await Promise.all(
-          conversations.map(async (conversation) => {
-            const messages = await chatApi.getMessages(conversation.id);
-            if (!isMounted) return;
-            setMessages(conversation.id, messages);
-            if (messages.length > 0) {
-              const last = messages[messages.length - 1];
-              updateLastMessage(conversation.id, last.content, last.timestamp);
-            }
-          }),
-        );
-      } catch (error) {
-        console.error("Failed to load conversations", error);
-        addError("Failed to load conversations");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    loadData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    isAuthenticated,
-    user?.id,
-    setConversations,
-    setMessages,
-    updateLastMessage,
-    setLoading,
-    addError,
-  ]);
+    refreshChatState();
+  }, [refreshChatState]);
 
   if (!isAuthenticated) {
     return authMode === "signup" ? (

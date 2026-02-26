@@ -54,7 +54,7 @@ export const getMessages: RequestHandler = async (req, res, next) => {
         senderId: message.senderId.toString(),
         readBy: (message.readBy || []).map((id) => id.toString()),
         deletedFor: (message.deletedFor || []).map((id) => id.toString()),
-        isDeletedGlobally: message.isDeletedGlobally,
+        isDeletedGlobally: message.isDeletedGlobally ?? false,
       }))
     )
   } catch (error) {

@@ -36,7 +36,7 @@ export const createMessage: RequestHandler = async (req, res, next) => {
       timestamp: message.timestamp,
       readBy: (message.readBy || []).map((id) => id.toString()),
       deletedFor: (message.deletedFor || []).map((id) => id.toString()),
-      isDeletedGlobally: message.isDeletedGlobally,
+      isDeletedGlobally: message.isDeletedGlobally ?? false,
     }
 
     const io = getIO()
@@ -138,8 +138,8 @@ export const updateMessage: RequestHandler = async (req, res, next) => {
       content: message.content,
       timestamp: message.timestamp,
       readBy: (message.readBy || []).map((id) => id.toString()),
-      deletedFor: (message.deletedFor || []).map((id) => id.toString()),
-      isDeletedGlobally: message.isDeletedGlobally,
+        deletedFor: (message.deletedFor || []).map((id) => id.toString()),
+        isDeletedGlobally: message.isDeletedGlobally ?? false,
     }
 
     return res.json(serialized)
