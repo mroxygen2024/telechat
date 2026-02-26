@@ -52,7 +52,7 @@ TeleChat is a full-stack, real-time chat application inspired by Telegram. It en
 
 ## Demo / Screenshots
 
-> _Demo and screenshots coming soon._
+![Chat Window](server/assets/chat-window.png)
 
 ---
 

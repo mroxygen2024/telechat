@@ -53,7 +53,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignup }) => {
           Sign in to TeleChat
         </h2>
         <p className="mt-2 text-center text-sm text-slate-600">
-          Use <span className="font-bold">admin / password</span> to enter
+          Use <span className="font-bold">Abush / password123</span> to enter
         </p>
         <p className="mt-2 text-center text-sm text-slate-600">
           New here?{" "}
