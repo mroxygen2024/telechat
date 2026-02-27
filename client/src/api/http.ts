@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { useAuthStore } from '../stores/useAuthStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'https://telechat-jhp1.onrender.com';
 
 export const getApiBaseUrl = () => API_BASE_URL;

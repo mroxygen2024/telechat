@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { useAuthStore } from "../stores/useAuthStore";
-import { authApi } from "../api/authApi";
-import { Input } from "../components/ui/Input";
-import { Button } from "../components/ui/Button";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { authApi } from "@/api/authApi";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 interface SignupPageProps {
   onSwitchToLogin: () => void;
@@ -45,8 +45,12 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onSwitchToLogin }) => {
     try {
       const response = await authApi.signup(username.trim(), password);
       login(response.user, response.token);
-    } catch (err: any) {
-      setError(err.message || "Signup failed");
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "message" in err) {
+        setError((err as { message?: string }).message || "Signup failed");
+      } else {
+        setError("Signup failed");
+      }
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 
-import { Conversation, Message, User } from '../types';
-import { requestJson } from './http';
+import type { Conversation, Message, User } from '@/types';
+import { requestJson } from '@/api/http';
 
 type ApiUser = {
   _id: string;

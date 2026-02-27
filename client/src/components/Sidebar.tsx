@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useChatStore } from "../stores/useChatStore";
-import { useAuthStore } from "../stores/useAuthStore";
-import { User, Conversation } from "../types";
-import { chatApi } from "../api/chatApi";
-import { useErrorStore } from "../stores/useErrorStore";
+import { useChatStore } from "@/stores/useChatStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import type { User, Conversation } from "@/types";
+import { chatApi } from "@/api/chatApi";
+import { useErrorStore } from "@/stores/useErrorStore";
 
 export const Sidebar: React.FC = () => {
   const {
@@ -13,7 +13,7 @@ export const Sidebar: React.FC = () => {
     addConversation,
   } = useChatStore();
   const { user: me, logout } = useAuthStore();
-  const addError = useErrorStore((state) => state.addError);
+  const addError = useErrorStore((state: { addError: (msg: string) => void }) => state.addError);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
@@ -75,16 +75,16 @@ export const Sidebar: React.FC = () => {
       try {
         const result = await chatApi.getUsers(search.trim() || undefined);
         setUsers(result);
-      } catch (error: any) {
-        setModalError(error.message || "Failed to load users");
-        addError(error.message || "Failed to load users");
+      } catch {
+        setModalError("Failed to load users");
+        addError("Failed to load users");
       } finally {
         setIsLoadingUsers(false);
       }
     }, 300);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isModalOpen, search]);
+  }, [isModalOpen, search, addError]);
 
   const startConversation = async (participantId: string) => {
     if (!me?.id) return;
@@ -97,9 +97,9 @@ export const Sidebar: React.FC = () => {
       addConversation(conversation);
       setActiveConversation(conversation.id);
       setIsModalOpen(false);
-    } catch (error: any) {
-      setModalError(error.message || "Failed to create conversation");
-      addError(error.message || "Failed to create conversation");
+    } catch {
+      setModalError("Failed to create conversation");
+      addError("Failed to create conversation");
     }
   };
 
@@ -108,7 +108,7 @@ export const Sidebar: React.FC = () => {
       {/* Header */}
       <div className="p-4 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {renderAvatar(me, "w-10 h-10", "text-sm")}
+          {renderAvatar(me ?? undefined, "w-10 h-10", "text-sm")}
           <div>
             <p className="font-semibold text-sm leading-tight">
               {me?.username}
@@ -192,7 +192,7 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveConversation(conv.id)}
               className={`px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors rounded-xl md:rounded-none ${isActive ? "bg-blue-50 border-r-4 border-blue-500" : "hover:bg-slate-50"}`}
             >
-              <div className="relative flex-shrink-0">
+              <div className="relative shrink-0">
                 {renderAvatar(partner, "w-12 h-12", "text-base")}
                 <div
                   className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
@@ -217,11 +217,11 @@ export const Sidebar: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <p className="text-xs text-slate-500 truncate mt-0.5 break-words">
+                  <p className="text-xs text-slate-500 truncate mt-0.5 wrap-break-word">
                     {conv.lastMessage || "No messages yet"}
                   </p>
-                  {conv.unreadCount > 0 && (
-                    <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.2rem] text-center">
+                  {(conv.unreadCount ?? 0) > 0 && (
+                    <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center">
                       {conv.unreadCount}
                     </span>
                   )}

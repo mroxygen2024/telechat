@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useChatStore } from "../stores/useChatStore";
-import { useAuthStore } from "../stores/useAuthStore";
-import { chatApi } from "../api/chatApi";
-import { Message, User } from "../types";
-import { socketService } from "../services/socketService";
-import { useErrorStore } from "../stores/useErrorStore";
+import { useChatStore } from "@/stores/useChatStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { chatApi } from "@/api/chatApi";
+import type { Message, User } from "@/types";
+import { socketService } from "@/services/socketService";
+import { useErrorStore } from "@/stores/useErrorStore";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -13,8 +13,8 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from "./ui/ContextMenu";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "./ui/Drawer";
+} from "@/components/ui/ContextMenu";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/Drawer";
 
 export const ChatWindow: React.FC = () => {
   const {
@@ -56,9 +56,13 @@ export const ChatWindow: React.FC = () => {
   const hasEmittedTypingRef = useRef(false);
 
   const activeConv = conversations.find((c) => c.id === activeConversationId);
-  const currentMessages = activeConversationId
-    ? messages[activeConversationId] || []
-    : [];
+  const currentMessages = React.useMemo(
+    () =>
+      activeConversationId
+        ? messages[activeConversationId] || []
+        : [],
+    [activeConversationId, messages]
+  );
   const partner = activeConv?.participants.find((p) => p.id !== me?.id);
 
   const scrollToBottom = () => {
@@ -120,25 +124,21 @@ export const ChatWindow: React.FC = () => {
       return;
     }
 
-    const handleTypingStart = (payload: {
-      conversationId: string;
-      senderId: string;
-    }) => {
+    const handleTypingStart = (payload: unknown) => {
+      const data = payload as { conversationId: string; senderId: string };
       if (
-        payload.conversationId === activeConversationId &&
-        payload.senderId === partner.id
+        data.conversationId === activeConversationId &&
+        data.senderId === partner.id
       ) {
         setIsPartnerTyping(true);
       }
     };
 
-    const handleTypingStop = (payload: {
-      conversationId: string;
-      senderId: string;
-    }) => {
+    const handleTypingStop = (payload: unknown) => {
+      const data = payload as { conversationId: string; senderId: string };
       if (
-        payload.conversationId === activeConversationId &&
-        payload.senderId === partner.id
+        data.conversationId === activeConversationId &&
+        data.senderId === partner.id
       ) {
         setIsPartnerTyping(false);
       }
@@ -292,19 +292,22 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
-  const scheduleRemoval = (messageId: string) => {
-    if (pendingRemovalIds.has(messageId)) return;
-    setPendingRemovalIds((prev) => new Set(prev).add(messageId));
-    window.setTimeout(() => {
-      if (!activeConversationId) return;
-      removeMessage(activeConversationId, messageId);
-      setPendingRemovalIds((prev) => {
-        const next = new Set(prev);
-        next.delete(messageId);
-        return next;
-      });
-    }, 180);
-  };
+  const scheduleRemoval = React.useCallback(
+    (messageId: string) => {
+      if (pendingRemovalIds.has(messageId)) return;
+      setPendingRemovalIds((prev) => new Set(prev).add(messageId));
+      window.setTimeout(() => {
+        if (!activeConversationId) return;
+        removeMessage(activeConversationId, messageId);
+        setPendingRemovalIds((prev) => {
+          const next = new Set(prev);
+          next.delete(messageId);
+          return next;
+        });
+      }, 180);
+    },
+    [pendingRemovalIds, activeConversationId, removeMessage]
+  );
 
   const handleDeleteMessage = async (
     message: Message,
@@ -347,7 +350,7 @@ export const ChatWindow: React.FC = () => {
         scheduleRemoval(message.id);
       }
     });
-  }, [activeConversationId, currentMessages, me?.id, pendingRemovalIds]);
+  }, [activeConversationId, currentMessages, me?.id, pendingRemovalIds, scheduleRemoval]);
 
   const openDrawerForMessage = (message: Message) => {
     setDrawerMessage(message);
@@ -420,7 +423,12 @@ export const ChatWindow: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-4 text-slate-400">
-          <button className="hover:text-blue-500 transition-colors">
+          <button
+            type="button"
+            className="hover:text-blue-500 transition-colors"
+            title="Search"
+            aria-label="Search"
+          >
             <svg
               className="w-5 h-5"
               fill="none"
@@ -435,7 +443,12 @@ export const ChatWindow: React.FC = () => {
               />
             </svg>
           </button>
-          <button className="hover:text-blue-500 transition-colors">
+          <button
+            type="button"
+            className="hover:text-blue-500 transition-colors"
+            title="More options"
+            aria-label="More options"
+          >
             <svg
               className="w-5 h-5"
               fill="none"
@@ -479,7 +492,7 @@ export const ChatWindow: React.FC = () => {
                     onTouchStart={() => handleLongPressStart(msg)}
                     onTouchEnd={handleLongPressEnd}
                     onTouchMove={handleLongPressEnd}
-                    className={`group max-w-[85%] md:max-w-[70%] lg:max-w-[60%] px-3 py-2 md:px-4 md:py-3 rounded-2xl relative shadow-sm transition-all duration-200 break-words ${
+                    className={`group max-w-85 md:max-w-70 lg:max-w-60 px-3 py-2 md:px-4 md:py-3 rounded-2xl relative shadow-sm transition-all duration-200 wrap-break-word ${
                       pendingRemovalIds.has(msg.id)
                         ? "opacity-0 scale-95"
                         : "opacity-100 scale-100"
@@ -496,6 +509,7 @@ export const ChatWindow: React.FC = () => {
                           onChange={(e) => setEditText(e.target.value)}
                           className="w-full bg-white/90 text-slate-800 rounded-xl p-2 text-sm focus:outline-none"
                           rows={2}
+                          aria-label="Edit message"
                         />
                         <div className="flex items-center justify-end gap-2 text-xs">
                           <button
@@ -516,7 +530,7 @@ export const ChatWindow: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-[15px] md:text-base lg:text-lg leading-relaxed break-words">
+                      <p className="text-[15px] md:text-base lg:text-lg leading-relaxed wrap-break-word">
                         {msg.content}
                       </p>
                     )}
@@ -642,6 +656,8 @@ export const ChatWindow: React.FC = () => {
           <button
             type="button"
             className="p-2.5 text-slate-400 hover:text-blue-500 transition-colors"
+            title="Attach file"
+            aria-label="Attach file"
           >
             <svg
               className="w-6 h-6"
@@ -668,7 +684,7 @@ export const ChatWindow: React.FC = () => {
                 }
               }}
               placeholder="Write a message..."
-              className="w-full bg-slate-100 border-none rounded-2xl py-2 px-4 text-sm md:text-base focus:ring-1 focus:ring-blue-400 focus:outline-none min-h-[44px] max-h-32 resize-none"
+              className="w-full bg-slate-100 border-none rounded-2xl py-2 px-4 text-sm md:text-base focus:ring-1 focus:ring-blue-400 focus:outline-none min-h-[44x] max-h-32 resize-none"
               rows={1}
             />
           </div>
@@ -680,6 +696,8 @@ export const ChatWindow: React.FC = () => {
                 ? "bg-blue-600 text-white shadow-md hover:bg-blue-700"
                 : "bg-slate-100 text-slate-300"
             }`}
+            title="Send message"
+            aria-label="Send message"
           >
             <svg
               className="w-6 h-6 rotate-90"

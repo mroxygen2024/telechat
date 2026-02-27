@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useErrorStore } from "../../stores/useErrorStore";
+import { useErrorStore } from "@/stores/useErrorStore";
 
 const AUTO_DISMISS_MS = 5000;
 
@@ -22,7 +22,7 @@ export const GlobalErrorToast: React.FC = () => {
       {errors.map((error) => (
         <div
           key={error.id}
-          className="min-w-[240px] max-w-[340px] rounded-xl bg-red-600 text-white shadow-lg px-4 py-3 text-sm flex items-start gap-3 animate-in fade-in"
+          className="min-w-60 max-w-85 rounded-xl bg-red-600 text-white shadow-lg px-4 py-3 text-sm flex items-start gap-3 animate-in fade-in"
         >
           <div className="flex-1">
             <p className="font-semibold">Error</p>

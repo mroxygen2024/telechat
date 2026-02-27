@@ -1,9 +1,9 @@
 
 import { io, type Socket } from 'socket.io-client';
-import { getApiBaseUrl } from '../api/http';
-import { useErrorStore } from '../stores/useErrorStore';
+import { getApiBaseUrl } from '@/api/http';
+import { useErrorStore } from '@/stores/useErrorStore';
 
-type Listener = (data: any) => void;
+type Listener = (data: unknown) => void;
 
 class SocketService {
   private listeners: Record<string, Listener[]> = {};
@@ -44,7 +44,7 @@ class SocketService {
     this.socket?.off(event, callback);
   }
 
-  emit(event: string, data: any) {
+  emit<T = unknown>(event: string, data: T) {
     this.socket?.emit(event, data);
   }
 }

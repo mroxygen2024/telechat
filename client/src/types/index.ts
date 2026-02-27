@@ -1,12 +1,13 @@
+// Add your shared types here and export them for use across the app.
 
-export interface User {
+export type User = {
   id: string;
   username: string;
   avatar?: string;
-  status?: 'online' | 'offline';
+  status?: "online" | "offline" | "typing" | string;
 }
 
-export interface Message {
+export type Message = {
   id: string;
   conversationId: string;
   senderId: string;
@@ -15,20 +16,20 @@ export interface Message {
   readBy: string[];
   deletedFor: string[];
   isDeletedGlobally: boolean;
-  status: 'sent' | 'delivered' | 'read';
+  status: "delivered" | "sent" | "read";
 }
 
-export interface Conversation {
+export type Conversation = {
   id: string;
   participants: User[];
   lastMessage?: string;
   lastTimestamp?: string;
-  unreadCount: number;
+  unreadCount?: number;
 }
 
-export interface AuthState {
+export type AuthState = {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  authError?: string | null;
+  authError: string | null;
 }

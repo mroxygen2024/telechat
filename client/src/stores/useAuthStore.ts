@@ -1,6 +1,6 @@
 
 import { create } from 'zustand';
-import { User, AuthState } from '../types';
+import type { User, AuthState } from '../types';
 
 interface AuthActions {
   login: (user: User, token: string) => void;

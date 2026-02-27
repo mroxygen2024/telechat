@@ -1,6 +1,6 @@
 
-import { User } from '../types';
-import { requestJson } from './http';
+import type { User } from '@/types';
+import { requestJson } from '@/api/http';
 
 type LoginResponse = {
   user: {
