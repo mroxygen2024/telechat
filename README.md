@@ -1,5 +1,9 @@
 # TeleChat: Real-Time Telegram-Style Chat Application
 
+<p align="center">
+	<img src="client/public/favicon.svg" alt="TeleChat logo" width="120" />
+</p>
+
 [![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)]()
 [![Vite](https://img.shields.io/badge/Vite-4.x-646cff?logo=vite&logoColor=white)]()
@@ -22,11 +26,13 @@
 - [Tech Stack](#tech-stack)
 - [Architecture Overview](#architecture-overview)
 - [Features Breakdown](#features-breakdown)
+- [Demo / Screenshots](#demo--screenshots)
 - [Folder Structure](#folder-structure)
 - [Environment Variables](#environment-variables)
 - [Installation Instructions](#installation-instructions)
 - [API Overview](#api-overview)
 - [Future Improvements](#future-improvements)
+- [License](#license)
 - [Author](#author)
 
 ---
@@ -52,7 +58,9 @@ TeleChat is a full-stack, real-time chat application inspired by Telegram. It en
 
 ## Demo / Screenshots
 
-![Chat Window](server/assets/chat-window.png)
+<p align="center">
+	<img src="client/public/telechat-mock.png" alt="TeleChat app mock" width="900" />
+</p>
 
 ---
 
@@ -298,6 +306,12 @@ npm run build
 - Voice messages
 - Message reactions
 - End-to-end encryption
+
+---
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
 
 ---
 
