@@ -1,0 +1,22 @@
+# Sensitive environment files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Keep safe examples tracked
+!.env.example
+!**/.env.example
+
+# Common secret/key artifacts
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.jks
+*.keystore
+*.kdbx
+
+# Local override config
+*.local
