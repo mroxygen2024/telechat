@@ -323,4 +323,49 @@ This project is licensed under the MIT License. See `LICENSE` for details.
 
 ---
 
+## 🐳 Dockerized Setup (Updated for Port 4000)
+
+### Prerequisites
+- [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/) installed
+- MongoDB Atlas cluster (or any remote MongoDB URI)
+
+### Environment Variables
+- Copy `.env.example` to `.env` in both `client/` and `server/` and fill in your values:
+  - `client/.env` — set `VITE_API_URL` (e.g. `http://localhost:4000/api` for dev, `/api` for prod)
+  - `server/.env` — set `MONGODB_URI`, `JWT_SECRET`, `PORT=4000`, etc. (see example)
+- **Never commit real secrets!**
+
+### Development (Hot Reload)
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+- Frontend: http://localhost:5173
+- Backend: http://localhost:4000
+- Live reload enabled (volumes)
+
+### Production (Optimized, Nginx)
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+```
+- App: http://localhost
+- Nginx serves frontend and proxies API/websockets to backend on port 4000
+
+### Stopping Containers
+
+```sh
+docker compose down
+```
+
+### Notes
+- **Backend now runs on port 4000** (update your .env and any API URLs accordingly)
+- **MongoDB is not containerized**: Use MongoDB Atlas and set `MONGODB_URI` in `server/.env`.
+- **Networking**: Docker service names are used (not `localhost`).
+- **Production**: Multi-stage builds, Alpine images, no dev dependencies, secure env handling.
+- **Nginx**: Handles static files, `/api` proxy, and websockets in production.
+- **.env.example** files are provided for onboarding.
+
+---
+
 > For questions or contributions, please open an issue or submit a pull request.

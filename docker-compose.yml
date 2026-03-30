@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    env_file:
+      - ./server/.env
+    ports:
+      - "4000:4000"
+    networks:
+      - telechat-net
+    depends_on: []
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    env_file:
+      - ./client/.env
+    ports:
+      - "5173:5173"
+    networks:
+      - telechat-net
+    depends_on:
+      - server
+networks:
+  telechat-net:
+    driver: bridge
